@@ -51,6 +51,17 @@ export default function TeacherLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarLabel: t("profile.tab_profile"),
+          title: t("profile.tab_profile"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={22} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

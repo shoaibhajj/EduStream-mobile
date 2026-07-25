@@ -147,6 +147,46 @@ const ar = {
     course_lessons_title: "حصص الدورة",
     tab_courses: "الدورات",
   },
+  profile: {
+    // ── Student Profile ──
+    student_title: "الملف الشخصي",
+    student_name_label: "الاسم الكامل",
+    student_name_placeholder: "أدخل اسمك",
+    student_grade_label: "السنة الدراسية",
+    student_grade_placeholder: "مثال: year-2",
+    edit_button: "تعديل",
+    save_button: "حفظ",
+    cancel_button: "إلغاء",
+    saved_title: "تم الحفظ",
+    saved_msg: "تم تحديث بياناتك بنجاح (بيانات تجريبية).",
+    validation_title: "تنبيه",
+    validation_name_required: "يرجى إدخال الاسم الكامل.",
+
+    // ── Teacher Profile ──
+    teacher_title: "الملف الشخصي",
+    teacher_name_label: "الاسم الكامل",
+    teacher_name_placeholder: "أدخل اسمك",
+    teacher_bio_label: "نبذة تعريفية",
+    teacher_bio_placeholder: "اكتب نبذة مختصرة عنك",
+    teacher_phone_label: "رقم الهاتف",
+    teacher_phone_placeholder: "09xxxxxxxx",
+
+    // ── Payment Info ──
+    payment_title: "معلومات الدفع",
+    payment_instructions_label: "تعليمات الدفع",
+    payment_instructions_placeholder: "اشرح كيفية دفع الطالب",
+    payment_bank_label: "اسم البنك",
+    payment_bank_placeholder: "اسم البنك (اختياري)",
+    payment_account_label: "رقم الحساب / IBAN",
+    payment_account_placeholder: "رقم الحساب (اختياري)",
+    payment_phone_label: "رقم الدفع عبر الهاتف",
+    payment_phone_placeholder: "09xxxxxxxx (اختياري)",
+    payment_saved_msg: "تم حفظ معلومات الدفع بنجاح (بيانات تجريبية).",
+
+    // ── Tab labels (used in layouts) ──
+    tab_profile: "الملف الشخصي",
+    tab_payment: "الدفع",
+  },
 };
 
 export default ar;

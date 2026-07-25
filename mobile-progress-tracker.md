@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 12 complete — Teacher Course Management UI is now built in the mock-data-first phase with Arabic as the default experience and English confirmed as the secondary language. The teacher flow now includes a real course-management list screen inside the teacher tabs, mock create/edit course forms, mock lesson list and create/edit lesson forms, plus navigation from the teacher area into those management flows using the shared UI foundations and mock data layer only. All visible text uses translation keys, RTL was checked first, and the final route structure keeps the course list inside `(teacher)` while deeper create/edit/lesson management screens stay in top-level teacher course routes so native back navigation works correctly.
+Feature 13 complete — Profile and Payment Info Screens are now built in the mock-data-first phase with Arabic as the default experience and English confirmed as the secondary language. The app now includes student and teacher profile screen UI using the shared design foundations, a teacher-facing payment info screen backed by the mock data layer, mock edit/save behavior for profile and payment data, and navigation entry points into these screens from the current flows. All visible text uses translation keys, RTL was checked first, keyboard handling was added for form screens, and the temporary profile tab back-navigation concern has been explicitly deferred for final cleanup during Feature 14 — Connect Navigation Flows.
 
 
 ## Next Up
-Feature 13 — Build Profile and Payment Info Screens
+Feature 14 — Connect Navigation Flows
 
 
 ## Build Progress
@@ -25,6 +25,7 @@ Feature 13 — Build Profile and Payment Info Screens
 - 10 — Build Course Detail and Lessons Screens
 - 11 — Build Teacher Home Screen
 - 12 — Build Teacher Course Management UI
+- 13 — Build Profile and Payment Info Screens
 
 
 ### In Progress
@@ -32,7 +33,6 @@ Feature 13 — Build Profile and Payment Info Screens
 
 
 ### Not Started
-- 13 — Build Profile and Payment Info Screens
 - 14 — Connect Navigation Flows
 - 15 — Polish UI and Empty/Error States
 - 16 — Prepare First APK Build
@@ -137,6 +137,12 @@ Feature 13 — Build Profile and Payment Info Screens
 - Confirmed the full teacher course-management flow works locally in Arabic first, then English: Home/Teacher area → Courses tab → course list → create/edit course → lesson list → create/edit lesson.
 - Confirmed all new screens still use mock data only; save actions are mock-stage behaviors and do not persist after a full reload or app restart.
 - Confirmed `npx tsc --noEmit` passes clean after the full Feature 12 implementation and fixes.
+- Built student and teacher profile screen UI plus the teacher payment info screen using the shared UI foundations and the mock data layer only.
+- Added mock query/update helpers for profile and payment info so edit/save behavior stays inside the mock data layer and remains easy to replace with real backend calls later.
+- Added translation keys for all visible profile and payment UI text in both Arabic and English; no visible hardcoded strings were introduced in these screens.
+- Confirmed profile and payment forms support keyboard-safe scrolling and basic mock save behavior only — no real backend persistence was added.
+- Confirmed Arabic was checked first in RTL for profile and payment flows, then English was rechecked for the same screens.
+- Noted a temporary profile navigation/back-navigation concern in the current tab-entry approach and intentionally deferred the final route cleanup to Feature 14 — Connect Navigation Flows.
 
 
 ## Architecture Decisions
@@ -162,6 +168,8 @@ Feature 13 — Build Profile and Payment Info Screens
 - The `student-course` and `student-watch` top-level dynamic routes use `headerShown: true` in the root stack so students always have a visible native back button when navigating into the detail/watch flow from anywhere in the app.
 - Teacher home follows the same role-based routing principle as student home: only true teacher entry points should stay inside the `(teacher)` tabs group, while future teacher course management detail flows should live in top-level routes outside the tabs tree.
 - For teacher course management, the course list entry now lives inside the `(teacher)` tabs tree as `app/(teacher)/courses.tsx`, while create/edit course and lesson management screens remain in the top-level `teacher-course` route tree so native back navigation behaves correctly without redirect-loop workarounds.
+- Profile/payment screen data access and mock mutations should stay in `lib/mock-data/profile.ts` and `lib/mock-data/teacher.ts`, not inside screen components, so the future backend swap remains isolated.
+- The final profile tab route structure should be revisited during Feature 14 so the app preserves intuitive back behavior while keeping top-level destinations and pushed detail screens clearly separated.
 
 
 ## Notes / Risks
@@ -183,3 +191,4 @@ Feature 13 — Build Profile and Payment Info Screens
 - Teacher course management routes must stay out of the `(teacher)` tabs tree once Feature 12 begins, otherwise screens like `new`, `edit`, and `lessons` can appear as unwanted tab bar items.
 - Teacher course and lesson save actions are still mock-only; they currently simulate success but do not persist after a full app restart or data reload.
 - Redirect-style tab screens should be avoided for core teacher destinations because they can create loading loops and break native back behavior when revisiting the tab.
+- Profile tab routing should be finalized carefully during Feature 14 because redirect-style profile entries can create unintuitive back behavior if they replace the tab route instead of preserving tab history.

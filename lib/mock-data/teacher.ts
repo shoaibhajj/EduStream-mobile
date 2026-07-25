@@ -5,6 +5,7 @@ import type { Teacher, PaymentInfo, Course, Enrollment } from "../types";
 import { COURSES } from "./student";
 import type { Lesson } from "../types";
 import { LESSONS } from "./student"; 
+
 const TEACHERS: Teacher[] = [
   {
     id: "teacher-1",
@@ -40,36 +41,36 @@ const TEACHERS: Teacher[] = [
   },
 ];
 
-const PAYMENT_INFO: PaymentInfo[] = [
-  {
-    teacherId: "teacher-1",
-    instructions: "يرجى التحويل عبر سيريتيل كاش ثم إرسال صورة الإيصال.",
-    bankName: null,
-    accountNumber: null,
-    phoneNumber: "0912345678",
-  },
-  {
-    teacherId: "teacher-2",
-    instructions: "التحويل عبر البنك الأهلي أو سيريتيل كاش.",
-    bankName: "البنك الأهلي السوري",
-    accountNumber: "SY12-3456-7890-1234",
-    phoneNumber: "0923456789",
-  },
-  {
-    teacherId: "teacher-3",
-    instructions: "التحويل عبر MTN كاش فقط.",
-    bankName: null,
-    accountNumber: null,
-    phoneNumber: "0934567890",
-  },
-  {
-    teacherId: "teacher-4",
-    instructions: "الدفع نقداً أو عبر سيريتيل كاش.",
-    bankName: null,
-    accountNumber: null,
-    phoneNumber: "0945678901",
-  },
-];
+// let PAYMENT_INFO: PaymentInfo[] = [
+//   {
+//     teacherId: "teacher-1",
+//     instructions: "يرجى التحويل عبر سيريتيل كاش ثم إرسال صورة الإيصال.",
+//     bankName: null,
+//     accountNumber: null,
+//     phoneNumber: "0912345678",
+//   },
+//   {
+//     teacherId: "teacher-2",
+//     instructions: "التحويل عبر البنك الأهلي أو سيريتيل كاش.",
+//     bankName: "البنك الأهلي السوري",
+//     accountNumber: "SY12-3456-7890-1234",
+//     phoneNumber: "0923456789",
+//   },
+//   {
+//     teacherId: "teacher-3",
+//     instructions: "التحويل عبر MTN كاش فقط.",
+//     bankName: null,
+//     accountNumber: null,
+//     phoneNumber: "0934567890",
+//   },
+//   {
+//     teacherId: "teacher-4",
+//     instructions: "الدفع نقداً أو عبر سيريتيل كاش.",
+//     bankName: null,
+//     accountNumber: null,
+//     phoneNumber: "0945678901",
+//   },
+// ];
 
 // Enrollments across all teacher courses (used by teacher dashboard)
 const ENROLLMENTS: Enrollment[] = [
@@ -239,4 +240,39 @@ export async function getTeacherLessonById(
   lessonId: string
 ): Promise<Lesson | null> {
   return LESSONS.find((l) => l.id === lessonId) ?? null;
+}
+
+// ─── Payment Info ─────────────────────────────────────────────────────
+
+
+
+let PAYMENT_INFO: PaymentInfo[] = [
+  {
+    teacherId: "teacher-1",
+    instructions: "يرجى التحويل على الرقم أدناه وإرسال صورة الإيصال.",
+    bankName: "بنك سورية الدولي الإسلامي",
+    accountNumber: "SY12 0000 1234 5678",
+    phoneNumber: "0912345678",
+  },
+];
+
+export async function getPaymentInfo(
+  teacherId: string
+): Promise<PaymentInfo | null> {
+  return PAYMENT_INFO.find((p) => p.teacherId === teacherId) ?? null;
+}
+
+export async function updatePaymentInfo(
+  teacherId: string,
+  patch: Partial<Omit<PaymentInfo, "teacherId">>
+): Promise<PaymentInfo> {
+  const exists = PAYMENT_INFO.some((p) => p.teacherId === teacherId);
+  if (exists) {
+    PAYMENT_INFO = PAYMENT_INFO.map((p) =>
+      p.teacherId === teacherId ? { ...p, ...patch } : p
+    );
+  } else {
+    PAYMENT_INFO.push({ teacherId, instructions: "", bankName: null, accountNumber: null, phoneNumber: null, ...patch });
+  }
+  return PAYMENT_INFO.find((p) => p.teacherId === teacherId)!;
 }

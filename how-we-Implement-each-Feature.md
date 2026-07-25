@@ -9143,3 +9143,776 @@ That is normal in React Native and becomes easier once you start thinking in mob
 - Expo Vector Icons guide: https://docs.expo.dev/guides/icons/ [web:42]
 
 ---
+
+
+# Feature 13 — Build Profile and Payment Info Screens
+
+## What this feature does
+
+This feature builds the first real profile-management screens for the EduStream mobile app and adds the teacher-facing payment info screen during the mock-data-first phase.
+
+It includes:
+- a student profile screen
+- a teacher profile screen
+- a teacher payment info screen
+- mock edit/save behavior for those forms
+- navigation entry points from the current app flows
+- reuse of the shared UI primitives and design foundations already created earlier
+
+This feature does **not** include:
+- real authentication-based identity resolution
+- real file uploads or avatar uploads
+- Supabase integration
+- Clerk integration
+- real backend persistence
+- broader settings screens unrelated to profile and payment info
+
+The final success condition for this feature is:
+- the profile screen can be opened
+- the payment info screen can be opened
+- Arabic is the default experience
+- English still works as a secondary language
+- profile fields can be edited through mock-only save behavior
+- payment fields can be edited through mock-only save behavior
+- the forms are keyboard-safe on mobile
+- the implementation stays aligned with the mock data layer and shared design foundations
+
+---
+
+## Why this feature matters
+
+By this point in the project, the app already had:
+- student home and browse flows
+- course detail and watch routes
+- teacher home
+- teacher course management
+- a mock data layer split by concern
+- shared UI primitives
+- Arabic-first localization rules
+
+But the app still lacked one important user-facing area: profile management.
+
+Profile screens matter because they turn the app from a route demo into something that feels more like a real product. A teacher or student should be able to see and edit their own information, even if persistence is still local and mock-only for now.
+
+This feature also matters architecturally because it forces the app to solve a common mobile product problem:
+- form layout
+- keyboard overlap
+- editable state vs read-only state
+- mock mutation flow
+- role-specific screen behavior
+- navigation between tab areas and pushed detail/edit screens
+
+For a React / Next.js engineer, this is similar to adding account and payout settings pages. But in React Native, the implementation has extra mobile concerns:
+- keyboard overlap is real and visible
+- ScrollView behavior matters more
+- form density has to stay comfortable on a small screen
+- route structure affects back navigation more directly than a simple browser page model
+
+---
+
+## Original implementation plan
+
+Before implementation, we re-read the current source-of-truth docs from the repo and followed the tracker numbering exactly as written.
+
+The practical plan for Feature 13 became:
+
+1. Re-read the repo docs and current tracker order.
+2. Stay fully inside the mock-data-first phase.
+3. Keep all profile and payment data access inside the mock data layer.
+4. Add any missing profile/payment helpers in the mock layer rather than inside screens.
+5. Build student and teacher profile UI using the planned mock profile shape.
+6. Build teacher payment info UI using the planned mock payment-info shape.
+7. Reuse shared design foundations from Feature 06 instead of introducing ad hoc UI patterns.
+8. Make every visible string translation-key-based.
+9. Check Arabic first in RTL, then confirm English.
+10. Keep navigation cohesive, but defer final route cleanup if any tab/back-history issue remains.
+
+This plan stayed within the current project constraints:
+- Arabic-first by default
+- translation keys only for visible text
+- RTL-safe layout choices
+- mock data only
+- no backend integration
+- no unrelated settings expansion
+- no real upload or payment processing yet
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before changing code, we re-read:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+### Why we did it
+
+This project explicitly uses the repo docs and current tracker order as the source of truth.
+
+That mattered here because:
+- the feature numbering had already shifted earlier after inserting the localization feature
+- the profile/payment work had to stay mock-only
+- Arabic-first rules were already mandatory
+- the screen work had to reuse Feature 06 design foundations
+- the route structure had to stay consistent with the current Expo Router patterns already in use elsewhere
+
+### Engineering note
+
+This is especially important in app projects with evolving route structure.
+
+In mobile work, incorrect assumptions about:
+- current route organization
+- tab vs pushed screen separation
+- localization requirements
+- mock-vs-backend boundaries
+
+can create UI work that looks fine but behaves poorly in navigation or quickly becomes inconsistent with the rest of the app.
+
+---
+
+## Step 2 — Keep profile and payment data logic in the mock data layer
+
+### What we did
+
+We extended the mock data layer rather than putting profile or payment objects directly inside screen files.
+
+The implementation used:
+- `lib/mock-data/profile.ts`
+- `lib/mock-data/teacher.ts`
+
+We added or expanded helpers such as:
+- current student profile retrieval
+- current teacher profile retrieval
+- student profile update
+- teacher profile update
+- payment info retrieval
+- payment info update
+
+The important rule was that screen files should call helper functions instead of owning the data shape.
+
+### Why we did it
+
+The project is still in the mock-data-first phase, so screen code should behave as if it is already talking to a small app data layer, even though the data is still local and in-memory.
+
+That keeps the separation clean:
+- screen = UI state and rendering
+- mock layer = retrieval and mutation shape
+
+### Why this matters
+
+This makes the future backend swap easier.
+
+Today the helper can:
+- return in-memory mock data
+- update local arrays
+- simulate save behavior
+
+Later the same function names can:
+- read from Supabase
+- write to Supabase
+- use authenticated user identity
+
+without forcing a large rewrite of the screen components.
+
+### React vs React Native note
+
+This idea is not unique to mobile, but it becomes especially valuable in React Native screens because screen files already carry enough responsibility:
+- loading state
+- local form state
+- navigation behavior
+- keyboard behavior
+- conditional rendering
+
+If screen files also own large mock objects and mutation logic, they become noisy very quickly.
+
+---
+
+## Step 3 — Add translation keys for profile and payment flows
+
+### What we did
+
+We added a dedicated `profile` translation namespace to:
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+The new keys covered:
+- profile screen titles
+- field labels
+- field placeholders
+- edit/save/cancel actions
+- save success alerts
+- validation alerts
+- payment info labels
+- payment info placeholders
+- profile/payment tab labels
+
+### Why we did it
+
+Feature 04 established a strict rule:
+all visible UI strings must come from translation files.
+
+That means Feature 13 could not introduce visible strings directly in JSX such as:
+- `Profile`
+- `Payment Info`
+- `Save`
+- `Cancel`
+- `Phone Number`
+
+Those all had to come through translation keys from the start.
+
+### Why this matters
+
+This was especially important here because forms are full of visible microcopy:
+- labels
+- placeholders
+- button text
+- validation messages
+- alert titles
+- alert descriptions
+
+If even one form feature ignores the localization rule, hardcoded strings start spreading quickly.
+
+### React vs React Native note
+
+In mobile forms, translation discipline matters even more because labels and placeholders directly affect:
+- field width pressure
+- row spacing
+- vertical density
+- RTL visual balance
+
+So i18n work here is also layout work.
+
+---
+
+## Step 4 — Reuse the shared design foundations instead of building custom form UI from scratch
+
+### What we did
+
+We built the profile and payment screens using the shared UI primitives already introduced earlier in the project, such as:
+- `ScreenContainer`
+- `AppText`
+- `Card`
+- `PrimaryButton`
+- `SecondaryButton`
+- `LoadingScreen`
+
+The forms stayed simple:
+- one vertical flow
+- card-based field grouping
+- clear action buttons
+- no unnecessary abstraction layer
+
+### Why we did it
+
+Feature 06 already created the shared visual foundation for repeated mobile UI patterns.
+
+That means Feature 13 should not invent:
+- a new button style
+- a new card style
+- a new typography approach
+- one-off loading patterns
+
+unless the feature genuinely needed something the shared layer could not provide.
+
+### Why this matters
+
+This keeps the app visually consistent and keeps implementation faster.
+
+It also reinforces an important engineering rule for this project:
+new screens should compose existing primitives before inventing new ones.
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to using an existing component system rather than rebuilding form shells per page.
+
+The mobile-specific benefit is even stronger because shared components also help stabilize:
+- touch target sizing
+- spacing rhythm
+- safe-area wrapping
+- visual consistency across screens with different navigation shells
+
+---
+
+## Step 5 — Build the student and teacher profile screens
+
+### What we did
+
+We created top-level profile routes for:
+- student profile
+- teacher profile
+
+These screens:
+- load current mock profile data
+- render a read-only display state
+- switch into an editable form state
+- allow mock save
+- allow cancel/reset back to current saved mock values
+
+The student profile screen stayed intentionally small and focused.
+
+The teacher profile screen included a richer form shape that better matches future teacher-facing needs, such as:
+- name
+- bio
+- phone number
+
+### Why we did it
+
+The app needs both role-specific experiences and consistent interaction patterns.
+
+A student profile does not need to look identical to a teacher profile, but both should feel like the same product:
+- same design language
+- same edit/save pattern
+- same translation-key discipline
+- same mock-data architecture
+
+### Why this matters
+
+This is the first time the app gives both roles a personal account-like screen rather than only content and workflow screens.
+
+That helps the app feel structurally complete:
+- students have a real profile destination
+- teachers have a real profile destination
+- the app is no longer only “course and dashboard screens”
+
+### React vs React Native note
+
+This is one place where the web instinct of “just show a page with inputs” is not enough.
+
+On mobile, profile forms need to feel:
+- compact
+- scannable
+- easy to tap
+- easy to dismiss or save
+- comfortable in a one-hand, small-screen environment
+
+That is why keeping the screen simple was the correct decision.
+
+---
+
+## Step 6 — Build the teacher payment info screen
+
+### What we did
+
+We created a dedicated teacher-facing payment info route and form.
+
+This screen uses the mock payment-info shape and allows editing fields such as:
+- payment instructions
+- bank name
+- account number or IBAN
+- payment phone number
+
+The screen follows the same interaction pattern as profile:
+- load mock data
+- show current values
+- switch into edit mode
+- save through the mock data helper
+- cancel back to the last saved mock state
+
+### Why we did it
+
+The build plan required payment info as part of the teacher-facing profile/payment feature, but the current phase is still mock-data-first.
+
+So the correct implementation was:
+- a clear form
+- realistic fields
+- mock-only save behavior
+- no real payment processing
+- no backend persistence
+- no payout workflow complexity yet
+
+### Why this matters
+
+This creates a believable future-facing structure without introducing premature backend complexity.
+
+The screen now acts like a stable contract for later work:
+- the teacher has a payment-info destination
+- the form shape exists
+- the translation keys exist
+- the data helper shape exists
+- the backend swap can happen later
+
+### React vs React Native note
+
+This is similar to a payout-settings page on the web, but mobile form design must be more disciplined.
+
+A payment form that feels acceptable on a desktop settings page can feel cramped and frustrating on a phone unless scrolling, spacing, and keyboard behavior are handled carefully.
+
+---
+
+## Step 7 — Handle keyboard overlap and scrolling the React Native way
+
+### What we did
+
+Because these screens contain multiple form fields, we wrapped them using:
+- `KeyboardAvoidingView`
+- `ScrollView`
+
+We also configured:
+- scroll-safe content
+- `keyboardShouldPersistTaps="handled"`
+- platform-specific keyboard behavior
+- spacing that keeps fields reachable while typing
+
+### Why we did it
+
+This was required by the feature scope and also by basic mobile UX reality.
+
+In a mobile form, the keyboard is one of the most common sources of broken experience:
+- fields get covered
+- save buttons disappear
+- tap behavior becomes frustrating
+- the screen may stop feeling reliable
+
+### Why this matters
+
+A form screen is not done when the fields render.
+It is done when the form still behaves correctly while the user is typing on a real mobile device.
+
+That is why this feature explicitly relied on the official React Native and Expo guidance for keyboard-safe form layout.
+
+### React vs React Native note
+
+For a web engineer, this is a major difference.
+
+In web forms, the browser and viewport scrolling often do more of the work automatically.
+
+In React Native, keyboard handling is much more explicit:
+- layout containers matter
+- scroll containers matter
+- platform differences matter
+- testing on a real device matters more
+
+---
+
+## Step 8 — Add navigation entry points from the current flows
+
+### What we did
+
+We added profile entry points from the current role-based app flows.
+
+For the student and teacher areas, profile navigation was introduced through the current navigation structure so that:
+- the student can open profile from the student area
+- the teacher can open profile from the teacher area
+- the teacher can reach payment info from the teacher profile flow
+
+The actual profile and payment screens live as pushed routes rather than being buried as unrelated inline subviews.
+
+### Why we did it
+
+A screen is not a real feature unless the user can reach it naturally.
+
+This feature needed to connect with the app as it currently exists, not just add isolated route files.
+
+### Why this matters
+
+This kept the profile/payment flow cohesive while preserving the project’s broader routing pattern:
+- top-level destinations stay clear
+- deeper screens can be pushed
+- the UI avoids polluting the tab bar with every detail route
+
+### Engineering note
+
+One small navigation concern remained around the current profile tab-entry approach and back behavior.
+
+That concern was noted rather than over-fixed inside this feature, because the next tracker item is explicitly:
+- Feature 14 — Connect Navigation Flows
+
+So the route cleanup belongs there, not here.
+
+---
+
+## Step 9 — Keep mock save behavior realistic but intentionally limited
+
+### What we did
+
+The save actions update the mock layer and reflect the updated values in the current running session.
+
+That means the feature supports:
+- edit
+- save
+- cancel
+- local screen update
+- visible success feedback
+
+But it still does **not** provide real persistence across full app restarts.
+
+### Why we did it
+
+This is exactly the right behavior for the current phase.
+
+The goal was to simulate a believable app interaction without pretending the backend already exists.
+
+### Why this matters
+
+This keeps expectations honest:
+- the UI behaves like a real form
+- the architecture stays ready for real persistence later
+- the implementation remains small and clean
+- no fake backend complexity is introduced too early
+
+### React vs React Native note
+
+This is similar to using temporary in-memory or fixture-backed form updates in a web prototype.
+
+The difference is that in a mobile app, even mock save behavior should still feel product-like:
+- responsive
+- clear
+- localized
+- stable under repeated editing
+
+---
+
+## Problems encountered
+
+### Problem 1 — Profile routing had a small back-navigation concern
+
+The current tab-entry approach for profile screens works, but it introduces a temporary navigation concern around back history and replacement behavior.
+
+### Why this mattered
+
+This was not serious enough to block Feature 13, but it was important enough to record.
+
+In mobile apps, route structure affects user feeling much more directly than in many web flows because back navigation is part of the core physical interaction model.
+
+### Problem 2 — Form screens can look done before keyboard behavior is actually correct
+
+A profile or payment form can render correctly in screenshots while still failing once the mobile keyboard opens.
+
+### Why this mattered
+
+This is a classic mobile trap.
+Visual completion is not enough for form completion.
+
+### Problem 3 — It is easy to let profile/payment work expand into a full settings feature
+
+Once profile forms exist, it is tempting to add:
+- avatars
+- uploads
+- auth account management
+- notification settings
+- backend identity sync
+- real payout logic
+
+### Why this mattered
+
+That would have broken scope and mixed multiple future milestones into one feature.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Keep the navigation issue documented and defer final cleanup to Feature 14
+
+Instead of over-engineering the route structure inside Feature 13, the temporary profile back-navigation concern was explicitly recorded for the next feature.
+
+That was the correct engineering choice because Feature 14 is already focused on navigation-flow cleanup and cohesion.
+
+### Solution 2 — Use official keyboard-safe layout primitives
+
+We used `KeyboardAvoidingView` plus `ScrollView` and tested the screens as mobile forms, not just as static layouts.
+
+That made the screens usable during actual text entry instead of only visually correct when idle.
+
+### Solution 3 — Enforce scope discipline
+
+We kept this feature focused on:
+- profile screen UI
+- payment info screen UI
+- mock data helpers
+- mock save behavior
+- navigation entry points
+
+and deliberately did not expand into:
+- auth
+- uploads
+- backend persistence
+- unrelated settings areas
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — Form screens are a stronger mobile problem than web developers often expect
+
+In web work, forms often benefit from browser scrolling behavior and a more forgiving viewport.
+
+In React Native, you have to think much earlier about:
+- keyboard overlap
+- vertical reachability
+- scroll container structure
+- tap persistence
+
+That makes mobile forms more explicitly engineered.
+
+## Lesson 2 — Route structure matters more to user feeling in mobile flows
+
+A web engineer may tolerate some route awkwardness if the page still loads.
+
+In a mobile app, unclear route separation can make back behavior feel immediately wrong because users experience navigation as screen-stack movement, not just page replacement.
+
+## Lesson 3 — Shared design primitives are even more important in mobile UI
+
+On mobile, inconsistency in:
+- button size
+- spacing rhythm
+- card padding
+- loading treatment
+- field grouping
+
+becomes obvious very quickly because the screen space is so small.
+
+That is why reusing the Feature 06 foundations was the right decision instead of building one-off form UI.
+
+## Lesson 4 — Mock mutations should still look like real app architecture
+
+Even in a mock-data-first phase, updates should pass through a data layer rather than living inside screen files.
+
+That keeps the feature realistic and protects future backend migration work.
+
+---
+
+## Discussion notes
+
+### Why was payment info limited to a form instead of a larger payout system?
+
+Because the current build phase is still mock-data-first.
+
+The correct goal was to establish:
+- a screen
+- a field shape
+- a translation layer
+- a data helper layer
+- a navigation destination
+
+not to simulate the entire financial workflow of the final product.
+
+### Why was the profile navigation issue not fully solved in Feature 13?
+
+Because not every issue should be solved in the first feature where it appears.
+
+Feature 13 introduced the screens successfully and kept the flow usable.
+Feature 14 is the correct place to clean up navigation edges more holistically.
+
+That is a healthier engineering pattern than repeatedly restructuring routes mid-feature.
+
+### What is the main React Native lesson here?
+
+A screen can look like “just another settings page” on paper, but in mobile it is really a combination of:
+- route architecture
+- form-state management
+- keyboard-safe layout
+- localization discipline
+- RTL discipline
+- shared component reuse
+
+That is why profile and payment screens are a meaningful feature, not just minor app polish.
+
+---
+
+## Final output of Feature 13
+
+At the end of this feature, the project had:
+- a student profile screen
+- a teacher profile screen
+- a teacher payment info screen
+- role-appropriate profile/payment navigation entry points
+- translation coverage for all visible profile/payment UI text
+- Arabic as the default profile/payment experience
+- English as a working secondary verification language
+- mock edit/save behavior for profile and payment data
+- keyboard-safe mobile form handling
+- shared design foundation reuse across all new screens
+- mock layer helper functions ready for future backend replacement
+- a documented note that final profile navigation cleanup belongs to Feature 14
+
+---
+
+## Completion checklist for Feature 13
+
+Feature 13 is complete when all of these are true:
+
+- the student profile screen can be opened
+- the teacher profile screen can be opened
+- the teacher payment info screen can be opened
+- Arabic is the default visible language on these screens
+- English still works on the same screens
+- all visible profile/payment text comes from translation keys
+- no new visible hardcoded strings were introduced
+- the screens use shared UI primitives from the existing design foundation
+- profile data loads through the mock data layer
+- payment info loads through the mock data layer
+- profile updates go through mock helper functions
+- payment updates go through mock helper functions
+- the forms support edit, save, and cancel behavior
+- the save behavior is mock-only and does not require a backend
+- the forms remain usable when the mobile keyboard is open
+- RTL layout was checked first in Arabic
+- English layout was rechecked after that
+- the feature stayed inside the mock-data-first phase
+- no Supabase, Clerk, upload, or unrelated settings work was introduced
+- the temporary profile navigation concern is documented for Feature 14 rather than ignored
+
+---
+
+## Exact commands used
+
+```bash
+mkdir -p app/profile
+```
+
+Update the mock data layer and translation files:
+```bash
+code lib/mock-data/profile.ts
+code lib/mock-data/teacher.ts
+code lib/i18n/ar.ts
+code lib/i18n/en.ts
+```
+
+Create and update the new profile/payment routes:
+```bash
+code app/profile/student.tsx
+code app/profile/teacher.tsx
+code app/profile/payment.tsx
+code app/_layout.tsx
+code "app/(student)/_layout.tsx"
+code "app/(student)/profile.tsx"
+code "app/(teacher)/_layout.tsx"
+code "app/(teacher)/profile.tsx"
+```
+
+Run the app after implementation:
+```bash
+npx expo start --clear
+```
+
+TypeScript verification:
+```bash
+npx tsc --noEmit
+```
+
+Optional quick sanity checks for visible hardcoded strings in the new feature files:
+```bash
+grep -R "Profile\\|Payment Info\\|Save\\|Cancel" app/profile lib/i18n
+```
+
+---
+
+## Official references
+
+These were the most relevant official references for this feature:
+
+- Expo Router docs: [https://docs.expo.dev/router/layouts/](https://docs.expo.dev/router/layouts/)
+- Expo Router navigation docs: [https://docs.expo.dev/router/navigating-pages/](https://docs.expo.dev/router/navigating-pages/)
+- React Native `KeyboardAvoidingView` docs: [https://reactnative.dev/docs/keyboardavoidingview](https://reactnative.dev/docs/keyboardavoidingview)
+- React Native `ScrollView` docs: [https://reactnative.dev/docs/scrollview](https://reactnative.dev/docs/scrollview)
+- React Native `TextInput` docs: [https://reactnative.dev/docs/textinput](https://reactnative.dev/docs/textinput)
+
+One important caution to remember for future work:
+
+profile and payment screens are one of the easiest places for app scope to expand too quickly. In this phase, the correct implementation is the smallest useful set of mock-data-first, Arabic-first, keyboard-safe forms — not a full account settings platform.

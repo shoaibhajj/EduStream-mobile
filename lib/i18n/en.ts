@@ -150,6 +150,42 @@ const en = {
     course_lessons_title: "Course Lessons",
     tab_courses: "Courses",
   },
+  profile: {
+    student_title: "Profile",
+    student_name_label: "Full Name",
+    student_name_placeholder: "Enter your name",
+    student_grade_label: "Academic Year",
+    student_grade_placeholder: "e.g. year-2",
+    edit_button: "Edit",
+    save_button: "Save",
+    cancel_button: "Cancel",
+    saved_title: "Saved",
+    saved_msg: "Your profile has been updated (mock data).",
+    validation_title: "Notice",
+    validation_name_required: "Please enter your full name.",
+
+    teacher_title: "Profile",
+    teacher_name_label: "Full Name",
+    teacher_name_placeholder: "Enter your name",
+    teacher_bio_label: "Bio",
+    teacher_bio_placeholder: "Write a short bio",
+    teacher_phone_label: "Phone Number",
+    teacher_phone_placeholder: "09xxxxxxxx",
+
+    payment_title: "Payment Info",
+    payment_instructions_label: "Payment Instructions",
+    payment_instructions_placeholder: "Explain how students should pay",
+    payment_bank_label: "Bank Name",
+    payment_bank_placeholder: "Bank name (optional)",
+    payment_account_label: "Account Number / IBAN",
+    payment_account_placeholder: "Account number (optional)",
+    payment_phone_label: "Mobile Payment Number",
+    payment_phone_placeholder: "09xxxxxxxx (optional)",
+    payment_saved_msg: "Payment info saved successfully (mock data).",
+
+    tab_profile: "Profile",
+    tab_payment: "Payment",
+  },
 };
 
 export default en;

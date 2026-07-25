@@ -75,6 +75,30 @@ export default function RootLayout() {
           headerBackTitle: "",
         }}
       />
+      <Stack.Screen
+        name="profile/student"
+        options={{
+          headerShown: true,
+          title: t("profile.student_title"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="profile/teacher"
+        options={{
+          headerShown: true,
+          title: t("profile.teacher_title"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="profile/payment"
+        options={{
+          headerShown: true,
+          title: t("profile.payment_title"),
+          headerBackTitle: "",
+        }}
+      />
     </Stack>
   );
 }

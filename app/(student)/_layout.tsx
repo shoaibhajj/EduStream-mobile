@@ -41,6 +41,14 @@ export default function StudentLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarLabel: t("profile.tab_profile"),
+          title: t("profile.tab_profile"),
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

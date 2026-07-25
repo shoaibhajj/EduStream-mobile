@@ -1,9 +1,9 @@
 // lib/mock-data/profile.ts
-// Student and teacher profile queries.
+import type { StudentProfile, Teacher } from "../types";
 
-import type { StudentProfile } from "../types";
+// ─── Student ──────────────────────────────────────────────────────────
 
-const STUDENT_PROFILES: StudentProfile[] = [
+let STUDENT_PROFILES: StudentProfile[] = [
   {
     id: "student-1",
     userId: "user-s1",
@@ -18,17 +18,8 @@ const STUDENT_PROFILES: StudentProfile[] = [
     gradeYear: "year-3",
     avatarUrl: null,
   },
-  {
-    id: "student-3",
-    userId: "user-s3",
-    name: "يوسف عبد الله",
-    gradeYear: "year-4",
-    avatarUrl: null,
-  },
 ];
 
-// In real app: userId comes from Clerk → look up profile in Supabase.
-// For mock: we use the first student as "current user".
 export async function getCurrentStudentProfile(): Promise<StudentProfile> {
   return STUDENT_PROFILES[0];
 }
@@ -37,4 +28,41 @@ export async function getStudentProfileById(
   studentId: string
 ): Promise<StudentProfile | null> {
   return STUDENT_PROFILES.find((s) => s.id === studentId) ?? null;
+}
+
+export async function updateStudentProfile(
+  studentId: string,
+  patch: Partial<Pick<StudentProfile, "name" | "gradeYear">>
+): Promise<StudentProfile> {
+  STUDENT_PROFILES = STUDENT_PROFILES.map((s) =>
+    s.id === studentId ? { ...s, ...patch } : s
+  );
+  return STUDENT_PROFILES.find((s) => s.id === studentId)!;
+}
+
+// ─── Teacher ──────────────────────────────────────────────────────────
+
+let TEACHER_PROFILES: Teacher[] = [
+  {
+    id: "teacher-1",
+    userId: "user-t1",
+    name: "د. محمد العمر",
+    bio: "معلم رياضيات بخبرة ١٢ عاماً.",
+    phoneNumber: "0912345678",
+    avatarUrl: null,
+  },
+];
+
+export async function getCurrentTeacherProfile(): Promise<Teacher> {
+  return TEACHER_PROFILES[0];
+}
+
+export async function updateTeacherProfile(
+  teacherId: string,
+  patch: Partial<Pick<Teacher, "name" | "bio" | "phoneNumber">>
+): Promise<Teacher> {
+  TEACHER_PROFILES = TEACHER_PROFILES.map((t) =>
+    t.id === teacherId ? { ...t, ...patch } : t
+  );
+  return TEACHER_PROFILES.find((t) => t.id === teacherId)!;
 }
