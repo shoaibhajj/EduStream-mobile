@@ -8,6 +8,8 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(student)" options={{ headerShown: false }} />
+      <Stack.Screen name="(teacher)" options={{ headerShown: false }} />
+
       <Stack.Screen
         name="student-course/[courseId]"
         options={{
@@ -21,6 +23,31 @@ export default function RootLayout() {
         options={{
           headerShown: true,
           title: t("student.watch_screen_title"),
+          headerBackTitle: "",
+        }}
+      />
+
+      <Stack.Screen
+        name="teacher-course/new"
+        options={{
+          headerShown: true,
+          title: t("teacher.action_add_course"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="teacher-course/[courseId]/edit"
+        options={{
+          headerShown: true,
+          title: t("teacher.edit_course_title"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="teacher-course/[courseId]/lessons"
+        options={{
+          headerShown: true,
+          title: t("teacher.course_lessons_title"),
           headerBackTitle: "",
         }}
       />

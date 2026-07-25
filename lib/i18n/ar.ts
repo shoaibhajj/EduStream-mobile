@@ -62,6 +62,29 @@ const ar = {
     watch_lesson_order: "الترتيب",
     watch_placeholder_note: "سيكون مشغّل الفيديو متاحاً هنا.",
   },
+  teacher: {
+    tab_home: "الرئيسية",
+    tab_enrollments: "الطلبات",
+    home_greeting: "مرحباً أيها المعلم",
+    home_subtitle: "إليك ملخص نشاطك اليوم",
+    home_overview: "نظرة عامة",
+    home_quick_actions: "إجراءات سريعة",
+    home_recent_courses: "الدورات الأخيرة",
+    home_no_courses: "لا توجد دورات حتى الآن.",
+    stat_total_courses: "إجمالي الدورات",
+    stat_pending: "الطلبات المعلقة",
+    stat_lessons: "حصة",
+    stat_free: "مجاني",
+    action_manage_enrollments: "إدارة طلبات التسجيل",
+    action_add_course: "إضافة دورة جديدة",
+    action_add_course_title: "إضافة دورة",
+    action_add_course_msg: "سيكون هذا متاحاً في الميزة القادمة.",
+    course_detail_coming_title: "تفاصيل الدورة",
+    course_detail_coming_msg: "إدارة الدورة ستكون متاحة في الميزة القادمة.",
+    enrollments_placeholder_title: "إدارة الطلبات",
+    enrollments_placeholder_msg:
+      "ستجد هنا طلبات تسجيل الطلاب لمراجعتها وتأكيدها.",
+  },
 };
 
 export default ar;

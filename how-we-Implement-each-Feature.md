@@ -7884,3 +7884,639 @@ These were the most relevant official references for this feature:
 
 - Expo Video documentation for future real playback work  
   https://docs.expo.dev/versions/latest/sdk/video/
+
+
+
+  ---
+TITLE: Feature 11 — Build Teacher Home Screen
+
+This feature builds the first real teacher landing experience for the EduStream mobile app. It does not yet include full teacher course management, backend integration, Supabase, or Clerk. Instead, it creates a mock-data-driven teacher dashboard that becomes the main home screen for teacher users, using the shared UI foundations already introduced earlier in the project.
+
+The end goal of this feature is simple but important:
+
+- a teacher can open the app and land on a real teacher home screen
+- the screen feels appropriate for teacher workflows, not student workflows
+- the screen uses mock data from the data layer, not arrays embedded directly in the screen
+- all visible text comes from translation keys
+- Arabic is the default experience
+- RTL remains safe and visually correct
+- English still works as a secondary verification language
+
+This feature also creates a cleaner routing direction for future teacher work, so the teacher area can later grow without polluting the bottom tab bar with course management detail screens.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Why this feature matters
+
+By the time this feature started, the app already had a much stronger student experience:
+
+- student home existed
+- browse flow existed
+- course detail and watch routes existed
+- mock data had already been split by concern
+- shared UI primitives already existed
+- Arabic-first localization rules were already active
+
+But the teacher side was still incomplete. There were teacher route placeholders, yet no real teacher landing screen that matched the quality and structure of the student area. That created two problems:
+
+1. the app architecture already anticipated teacher flows, but the teacher experience was not actually usable
+2. future teacher features such as course management and enrollment review would have no proper entry point unless a dashboard existed first
+
+So this feature is not just “another screen.” It establishes the teacher-facing root experience and defines how future teacher workflows should connect into the app.
+
+For a React / Next.js engineer, this is similar to the moment when an admin area stops being a placeholder page and becomes a real dashboard shell with overview cards, action entry points, and role-specific navigation structure.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - What we built
+
+The teacher home screen was built as a dashboard-style landing page with a limited and intentional scope.
+
+The feature includes:
+
+- a real `app/(teacher)/dashboard.tsx` screen instead of a placeholder
+- a teacher tabs layout under `app/(teacher)/_layout.tsx`
+- summary cards driven by mock data
+- recent teacher course content driven by mock data
+- quick action entry points for future teacher workflows
+- translation coverage in both `lib/i18n/ar.ts` and `lib/i18n/en.ts`
+- root stack support for the `(teacher)` route group in `app/_layout.tsx`
+
+The feature intentionally does **not** include:
+
+- real enrollment approval flows
+- real course create/edit flows
+- real lesson management flows
+- backend data fetching
+- Supabase or Clerk integration
+
+Those are explicitly deferred to later teacher features.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Files we created or updated
+
+These were the main files involved in Feature 11:
+
+- `app/(teacher)/_layout.tsx`
+- `app/(teacher)/dashboard.tsx`
+- `app/(teacher)/enrollments.tsx`
+- `app/_layout.tsx`
+- `lib/mock-data/teacher.ts`
+- `lib/mock-data/student.ts`
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+Each file had a clear responsibility:
+
+- teacher routing structure lived in `app/(teacher)/_layout.tsx`
+- the visible teacher dashboard UI lived in `app/(teacher)/dashboard.tsx`
+- the minimal second teacher tab placeholder lived in `app/(teacher)/enrollments.tsx`
+- the root stack registration lived in `app/_layout.tsx`
+- teacher summary query helpers lived in `lib/mock-data/teacher.ts`
+- shared course source access remained in the mock data layer via `lib/mock-data/student.ts`
+- all visible UI strings lived in `lib/i18n/ar.ts` and `lib/i18n/en.ts`
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 1 Add teacher home query helpers to the mock data layer - What we did
+
+We extended the teacher mock-data layer so the teacher home screen could ask for dashboard-friendly data instead of constructing summary logic directly inside the screen.
+
+The main idea was:
+
+- the screen should ask for teacher home data
+- the mock data layer should shape that data
+- future backend replacement should require minimal screen changes
+
+To support that, we added helper functions in `lib/mock-data/teacher.ts` such as:
+
+- `getTeacherCourses(teacherId)`
+- `getTeacherHomeSummary(teacherId)`
+
+The summary helper returns a compact dashboard-oriented shape such as:
+
+- total teacher courses
+- total pending enrollment requests
+- a recent subset of teacher courses
+
+This is important because overview screens usually need “query-shaped” data, not just raw entity arrays.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 1 Add teacher home query helpers to the mock data layer - Why we did it
+
+This preserves the same architectural discipline already established in Feature 07.
+
+Instead of doing this inside the screen:
+
+- load many arrays
+- manually filter courses
+- manually compute pending counts
+- manually decide what “recent” means
+
+we moved that shaping into the mock data layer.
+
+That gives three benefits:
+
+1. the screen stays smaller and easier to reason about
+2. future backend replacement becomes simpler because the screen already depends on a query-like function
+3. role-specific business logic stays near the role-specific data source, not inside route files
+
+This is one of the most useful long-term habits in UI-first, mock-data-first apps: treat mock helpers like rehearsal interfaces for future real queries.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 2 Reuse shared course data without duplicating it - What we did
+
+Teacher dashboard summaries need access to course records. Those courses already existed in the mock data layer, so we avoided creating a second copy of course arrays just for the teacher area.
+
+To make teacher-side queries possible, we exposed the course data source from the existing mock layer and let `lib/mock-data/teacher.ts` derive teacher-specific slices from it.
+
+In practice, that meant teacher queries could:
+
+- filter by `teacherId`
+- count matching courses
+- gather related enrollments
+- prepare a recent-courses subset
+
+without duplicating the actual catalog data.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 2 Reuse shared course data without duplicating it - Why we did it
+
+Duplicating mock arrays creates avoidable drift:
+
+- one file gets updated
+- the other does not
+- the teacher UI no longer matches student-visible course data
+- future backend replacement becomes harder to reason about
+
+Reusing the same course source keeps the app’s fake data more internally consistent. It also better reflects how a real backend would work: student and teacher views normally depend on the same underlying course records, just filtered and shaped differently.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 3 Add a teacher tabs layout - What we did
+
+We created `app/(teacher)/_layout.tsx` using Expo Router tabs so the teacher area has its own top-level navigation structure.
+
+The teacher tabs were kept intentionally minimal:
+
+- `dashboard`
+- `enrollments`
+
+This matches the principle already used in the student area: only true top-level destinations should appear in the tab bar.
+
+The teacher layout became the routing shell for the teacher role, while the dashboard screen became the actual teacher landing page.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 3 Add a teacher tabs layout - Why we did it
+
+Without a proper teacher layout, the teacher area would remain structurally weaker than the student area.
+
+This step matters because it defines:
+
+- what counts as a top-level teacher destination
+- what should be visible in the tab bar
+- how future teacher flows should attach to the teacher experience
+
+A route group without a deliberate layout can quickly become messy in Expo Router. Tabs are especially sensitive because files inside the group can accidentally become visible tab destinations if the structure is not planned carefully.
+
+So this step was partly UI work and partly navigation architecture work.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 4 Replace the teacher dashboard placeholder with a real screen - What we did
+
+The previous `app/(teacher)/dashboard.tsx` was just a simple placeholder. We replaced it with a real teacher dashboard screen built from shared primitives:
+
+- `ScreenContainer`
+- `AppText`
+- `Card`
+- `PrimaryButton`
+- `EmptyState`
+- `LoadingScreen`
+
+The final screen included these sections:
+
+- a greeting area for the teacher
+- a top summary section
+- overview cards for total courses and pending requests
+- quick action buttons
+- a recent courses section
+
+The screen loaded data with `useEffect` and async mock helpers, then rendered loading, real-data, and empty-friendly behavior.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 4 Replace the teacher dashboard placeholder with a real screen - Why we did it
+
+A teacher home screen should answer the most immediate teacher questions:
+
+- how many courses do I have?
+- do I have pending enrollment requests?
+- what are the most recent courses I may want to manage?
+- where do I go next?
+
+That is exactly what a useful dashboard should do. It should not try to contain the entire future teacher product surface. It should simply provide orientation and entry points.
+
+This is especially important in mobile UI. A mobile dashboard becomes noisy very quickly if it tries to show too many dense management tools at once. So the screen was kept focused and overview-oriented.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 5 Keep all teacher visible text in translation files - What we did
+
+We added a new `teacher` translation namespace in both:
+
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+This included keys for:
+
+- tab labels
+- greeting text
+- overview section labels
+- summary labels
+- button labels
+- placeholder alert text
+- recent course labels
+- enrollments placeholder text
+
+That means the new teacher UI follows the same localization rule already established for the rest of the app: no visible strings should be hardcoded directly in the screen.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 5 Keep all teacher visible text in translation files - Why we did it
+
+Feature 04 made Arabic-first localization a project-wide implementation rule, not a best-effort preference.
+
+That means every new screen must be built this way from the start:
+
+- Arabic first
+- translation keys only
+- English secondary
+- RTL-safe layout choices
+
+If this discipline is skipped even once, hardcoded UI text starts spreading again and future localization work becomes a cleanup task instead of a normal part of feature delivery.
+
+So translation work was part of implementation, not a final polish step.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 6 Register the teacher route group in the root stack - What we did
+
+We updated `app/_layout.tsx` so the root stack explicitly registers the `(teacher)` route group:
+
+- `name="(teacher)"`
+- `options={{ headerShown: false }}`
+
+This matches how the student route group is already handled.
+
+The root stack therefore became aware of:
+
+- the app index route
+- the student route group
+- the teacher route group
+- the top-level student detail routes that live outside student tabs
+
+This gave the teacher area a stable place inside the app-level routing tree.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 6 Register the teacher route group in the root stack - Why we did it
+
+Even if the teacher screen file exists, it is not enough for long-term routing clarity.
+
+The app already had a pattern where:
+
+- role-based top-level areas live in route groups
+- detail screens that should not appear in tabs can live outside those groups
+- the root stack owns the overall navigation shell
+
+Registering `(teacher)` in the root layout keeps the routing model consistent and prepares the app for future role-based growth.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 7 Keep teacher quick actions in placeholder mode for now - What we did
+
+The teacher dashboard includes quick actions such as course-related entry points, but in Feature 11 they remain placeholder interactions rather than real navigation into management screens.
+
+So for actions like “add course” or tapping a recent course card, we deliberately used `Alert` feedback rather than prematurely opening unfinished screens.
+
+That kept the feature within scope:
+
+- teacher home exists
+- teacher sees useful dashboard data
+- future entry points are visible
+- full teacher course management is still deferred
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 7 Keep teacher quick actions in placeholder mode for now - Why we did it
+
+This project is still in the mock-data-first phase, and Feature 11 is specifically the teacher home screen feature, not the full teacher management feature.
+
+If we had expanded those actions into real create/edit/lesson flows here, the feature would have grown beyond scope and mixed two milestones together.
+
+Using placeholder actions is a valid engineering choice when:
+
+- the route destination is part of a later feature
+- the current feature only needs to prove entry-point placement
+- the current screen should communicate intent without pretending the next feature already exists
+
+This mirrors the same disciplined approach used earlier in the app when placeholder routes were useful as deliberate milestones.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 8 Clarify the future teacher routing structure - What we did
+
+While finishing the teacher home feature, we also clarified how future teacher course-management routes should be structured so they do not pollute the teacher tab bar.
+
+The intended future structure is:
+
+- keep true teacher entry points inside `app/(teacher)/`
+- move deeper teacher course-management routes outside the teacher tabs tree
+
+Examples of the future top-level routes:
+
+- `app/teacher-course/new.tsx`
+- `app/teacher-course/[courseId]/edit.tsx`
+- `app/teacher-course/[courseId]/lessons.tsx`
+
+And the future navigation targets were recorded as:
+
+- `router.push("/teacher-course/new");`
+- `router.push(\`/teacher-course/${courseId}/edit\`);`
+- `router.push(\`/teacher-course/${courseId}/lessons\`);`
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Step 8 Clarify the future teacher routing structure - Why we did it
+
+This solves the same class of routing problem that already appeared earlier in the student area.
+
+If course creation, edit, and lesson-management screens stay inside the teacher tabs group, Expo Router can surface them as visible tab destinations. That creates unwanted UI such as:
+
+- extra tab items
+- internal workflow screens appearing as top-level destinations
+- confusing teacher navigation
+
+So the correct long-term pattern is:
+
+- top-level role destinations stay in the tab group
+- deep workflow screens move outside the tab tree
+- the root stack owns those deeper pushed screens
+
+This is the cleanest way to preserve a simple teacher tab bar while still allowing rich future teacher flows.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Problems encountered in Feature 11 - Problem 1 A teacher route group can accidentally expose too many tab destinations
+
+Once a teacher tabs layout exists, any screen placed in the wrong part of the route tree can start behaving like a tab candidate.
+
+That means the problem is not only visual. It is structural.
+
+A route such as:
+
+- `course/new`
+- `course/[courseId]/edit`
+- `course/[courseId]/lessons`
+
+might look like a reasonable folder organization at first, but if it sits in the wrong place under the teacher tabs tree, it can become visible in the bottom tab bar.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Problems encountered in Feature 11 - Problem 2 It was easy to expand this feature into teacher course management by accident
+
+A dashboard naturally invites deeper actions:
+
+- add course
+- edit course
+- manage lessons
+- review enrollments
+- inspect requests
+
+Without a clear scope boundary, a “home screen” feature can quietly turn into a partial admin system.
+
+That would make the feature harder to finish cleanly and harder to track correctly.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Problems encountered in Feature 11 - Problem 3 Teacher data needed overview shaping, not just raw mock arrays
+
+The existing mock layer already had teacher-related and course-related data, but a dashboard needs something slightly different:
+
+- counts
+- filtered subsets
+- summary-friendly slices
+- recent activity style groupings
+
+That is not the same as just dumping an array into a screen.
+
+So the issue was not lack of data. The issue was shaping the data correctly for dashboard use.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - How those problems were solved - Solution 1 Define teacher-home-specific query helpers in the mock data layer
+
+We solved the dashboard-data-shaping problem by adding small teacher-home query helpers instead of embedding summary logic directly in JSX.
+
+That preserved the architecture and gave the screen an API-like interface for overview data.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - How those problems were solved - Solution 2 Keep teacher home focused and defer real management flows
+
+We solved the scope problem by treating quick actions as placeholders for now rather than pretending the next feature was already complete.
+
+That kept Feature 11 honest:
+
+- real teacher home UI exists
+- meaningful mock data exists
+- future flow entry points exist
+- deeper management screens remain part of Feature 12
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - How those problems were solved - Solution 3 Reuse the student-era routing lesson for teacher routes
+
+We already learned from the student area that detail flows should not live as visible tab destinations.
+
+So the teacher routing plan intentionally mirrors that lesson:
+
+- teacher home remains inside `(teacher)`
+- teacher top-level destinations remain inside `(teacher)`
+- deeper teacher course-management routes should live outside `(teacher)`
+
+This creates consistency across the app and avoids relearning the same routing mistake later.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Lesson 1 Role-based home screens should feel different even when they share the same design system
+
+A shared design system does **not** mean every role gets the same layout.
+
+Student home and teacher home should reuse the same primitives, but the information architecture must fit the user’s job.
+
+For students, the home screen emphasizes learning continuation and discovery.
+
+For teachers, the home screen emphasizes oversight, pending actions, and management entry points.
+
+That is a useful product-design lesson: design consistency and role-specific usefulness are not opposites.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Lesson 2 Mock data layers should evolve from raw entities into screen-oriented query shapes
+
+Early in an app, raw arrays are enough.
+
+As the app grows, home screens and dashboards usually need:
+
+- counts
+- slices
+- grouped subsets
+- status summaries
+
+That is the point where the mock layer becomes more valuable if it starts behaving like a mini query API instead of a storage dump.
+
+Feature 11 is a good example of that shift.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Lesson 3 Route groups are powerful, but they reward discipline
+
+Expo Router’s file-based routing is very productive, but route groups and tabs can become confusing if the folder structure is not intentional.
+
+The important lesson is:
+
+- a file location is also a navigation decision
+- tab group placement affects visible destinations
+- future workflow screens should be placed based on navigation behavior, not only folder neatness
+
+This is one of the most important architectural habits in Expo Router apps.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Lesson 4 Arabic-first work is not finished when the strings translate
+
+Arabic-first implementation requires more than translation coverage.
+
+It also requires checking:
+
+- RTL row balance
+- card composition
+- spacing direction safety
+- text wrapping
+- tab label readability
+
+Feature 11 reinforces the same ongoing mobile lesson: localization and layout are deeply connected, especially on dense small-screen interfaces.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Discussion notes for Feature 11 - Why not connect teacher actions to real screens already?
+
+Because Feature 11 is the teacher home screen feature, not the teacher course management feature.
+
+The dashboard needed to expose the right entry points and prove the teacher landing experience. It did **not** need to implement the full workflows those entry points will eventually open.
+
+Keeping those actions in placeholder mode preserves scope clarity and keeps progress tracking honest.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Discussion notes for Feature 11 - Why put teacher summary helpers in the mock data layer instead of calculating everything in the screen?
+
+Because dashboards are summary consumers, not summary engines.
+
+If a screen directly computes too much filtering, counting, and shaping, it becomes harder to read and harder to replace later when real backend queries arrive.
+
+A screen should ideally say:
+
+- give me teacher home data
+- render it
+
+That is much cleaner than reconstructing the whole summary logic in component code.
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Discussion notes for Feature 11 - Why record the future `router.push(...)` targets now if we are not using them yet?
+
+Because routing decisions affect file placement early, even before full screens exist.
+
+Recording the intended future navigation targets now helps avoid two later problems:
+
+1. placing teacher course-management files inside the wrong route group
+2. introducing tab-bar pollution when Feature 12 begins
+
+So even though the pushes are not active yet, the routing plan is part of correct Feature 11 architecture.
+
+The intended future calls are:
+
+- `router.push("/teacher-course/new");`
+- `router.push(\`/teacher-course/${courseId}/edit\`);`
+- `router.push(\`/teacher-course/${courseId}/lessons\`);`
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Final output of Feature 11
+
+At the end of this feature, the project had:
+
+- a real teacher dashboard screen under `app/(teacher)/dashboard.tsx`
+- a real teacher tabs layout under `app/(teacher)/_layout.tsx`
+- a minimal enrollments placeholder under `app/(teacher)/enrollments.tsx`
+- root registration for `(teacher)` inside `app/_layout.tsx`
+- teacher-specific translation keys in both Arabic and English translation files
+- teacher-home query helpers in `lib/mock-data/teacher.ts`
+- reuse of shared course mock data instead of teacher-side duplication
+- shared UI primitive reuse throughout the teacher dashboard
+- Arabic-first RTL-safe teacher UI verified before English
+- a clarified future route structure for teacher course management outside the `(teacher)` tabs tree
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Completion checklist for Feature 11
+
+Feature 11 is complete when all of these are true:
+
+- `app/(teacher)/dashboard.tsx` is a real teacher home screen, not a placeholder
+- `app/(teacher)/_layout.tsx` exists and defines the teacher tab structure
+- only intended teacher top-level destinations appear in the teacher tab bar
+- `app/(teacher)/enrollments.tsx` exists as a minimal supporting screen
+- `app/_layout.tsx` registers the `(teacher)` route group
+- teacher home data comes from `lib/mock-data/teacher.ts`, not embedded arrays inside the screen
+- the teacher dashboard shows useful summary content such as total courses and pending requests
+- quick action entry points exist, even if some remain placeholder interactions for now
+- all visible teacher UI text comes from translation keys
+- Arabic is still the default experience
+- teacher layout has been visually checked in RTL first
+- English still works after switching language
+- no Supabase, Clerk, or real backend integration was introduced
+- the future teacher route plan is clear enough to keep course-management screens out of the teacher tabs tree
+
+---
+
+TITLE: Feature 11 — Build Teacher Home Screen - Official references
+
+These were the most useful official references for this feature:
+
+- Expo Router tabs layouts  
+  https://docs.expo.dev/router/layouts/tabs/
+
+- Expo Router route groups and file-based routing  
+  https://docs.expo.dev/router/basics/file-based-routing/#route-groups
+
+- Expo Router common navigation patterns  
+  https://docs.expo.dev/router/basics/common-navigation-patterns/
+
+- Expo Router nesting navigators  
+  https://docs.expo.dev/router/advanced/nesting-navigators/
+
+- React Native ScrollView  
+  https://reactnative.dev/docs/scrollview
+
+One practical takeaway from those references is especially important for teacher flows: top-level role destinations can live inside a tab route group, while deeper workflow screens should be pushed outside that tabs tree when they are not meant to be visible tab items.
+
+---

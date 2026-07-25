@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 10 complete — Course Detail and Lessons screens are now polished and fully connected. The course detail screen shows a thumbnail placeholder, enrollment status badge (confirmed/pending/none), lesson count, price, and enroll button with mock Alert feedback. The lesson list correctly distinguishes preview vs locked lessons with icons, badges, and opacity. Tapping a preview lesson navigates to a refined watch screen that loads lesson metadata (title, order, duration) from the mock data layer. Tapping a locked lesson triggers a descriptive Alert with no navigation. The watch screen uses AppText throughout, shows lesson metadata instead of a raw ID, and includes a back button. All strings use translation keys. Arabic is the default experience, RTL was visually confirmed, and English was confirmed working. `npx tsc --noEmit` and `npx expo start --clear` both passed after all changes.
+Feature 11 complete — Teacher Home Screen is now built as the main landing screen for teacher users using the shared UI foundations and mock data layer. The teacher experience includes a dashboard-style home layout with a top summary area, mock-data-driven overview blocks such as total courses, pending enrollment requests, and recent courses, plus quick teacher entry points for future flows. All visible text uses translation keys, Arabic remains the default experience, RTL was visually checked first, and English was also confirmed working. Teacher navigation was kept within the mock-data-first phase with no Supabase, Clerk, or real backend usage. `npx tsc --noEmit` and `npx expo start --clear` passed after the changes.
 
 
 ## Next Up
-Feature 11 — Build Teacher Home Screen
+Feature 12 — Build Teacher Course Management UI
 
 
 ## Build Progress
@@ -23,6 +23,7 @@ Feature 11 — Build Teacher Home Screen
 - 08 — Build Student Home Screen
 - 09 — Build Subject/Course Browsing Screens
 - 10 — Build Course Detail and Lessons Screens
+- 11 — Build Teacher Home Screen
 
 
 ### In Progress
@@ -30,7 +31,6 @@ Feature 11 — Build Teacher Home Screen
 
 
 ### Not Started
-- 11 — Build Teacher Home Screen
 - 12 — Build Teacher Course Management UI
 - 13 — Build Profile and Payment Info Screens
 - 14 — Connect Navigation Flows
@@ -115,6 +115,18 @@ Feature 11 — Build Teacher Home Screen
 - Confirmed Arabic remains the default experience across all refined screens; RTL layout visually confirmed on course detail and watch.
 - Confirmed English still works for the same full flow after all Feature 10 changes.
 - Confirmed `npx tsc --noEmit` passes clean and `npx expo start --clear` starts without errors after all Feature 10 updates.
+- Built the teacher home screen as the main teacher landing screen using shared UI primitives and mock-data-driven summary content.
+- Added teacher-specific translation keys in both `lib/i18n/ar.ts` and `lib/i18n/en.ts` so all visible teacher UI text remains translation-key-based with Arabic as the default and English as the secondary language.
+- Added teacher home mock query helpers in `lib/mock-data/teacher.ts` so teacher summary data stays in the mock layer and remains compatible with a future backend swap.
+- Registered the `(teacher)` route group in `app/_layout.tsx` and added a teacher tabs layout so teacher navigation has clean top-level entry points.
+- Confirmed the intended visible teacher tabs are limited to `الرئيسية` and `الطلبات`.
+- Confirmed Arabic teacher home layout was tested visually first in RTL, then rechecked in English.
+- Kept all teacher home behavior inside the mock-data-first phase with no Supabase, Clerk, or real backend integration.
+- Clarified the teacher routing plan for the next feature: future course management screens should move out of the `(teacher)` tabs tree into top-level routes such as `app/teacher-course/new.tsx`, `app/teacher-course/[courseId]/edit.tsx`, and `app/teacher-course/[courseId]/lessons.tsx` so they do not appear as visible tabs.
+- Recorded the future navigation targets for Feature 12 teacher course management:
+  - `router.push("/teacher-course/new");`
+  - `router.push(\`/teacher-course/${courseId}/edit\`);`
+  - `router.push(\`/teacher-course/${courseId}/lessons\`);`
 
 
 ## Architecture Decisions
@@ -138,6 +150,7 @@ Feature 11 — Build Teacher Home Screen
 - `ScreenContainer` should be the default outer wrapper for headerless full-screen pages that need safe-area protection; screens with visible native headers should only add safe-area edges when visually necessary.
 - Enrollment status query helpers belong in the mock data layer (`lib/mock-data/student.ts`), not inside screen components, so the status check is a single-line import that can later be replaced by a Supabase RLS query without touching screen logic.
 - The `student-course` and `student-watch` top-level dynamic routes use `headerShown: true` in the root stack so students always have a visible native back button when navigating into the detail/watch flow from anywhere in the app.
+- Teacher home follows the same role-based routing principle as student home: only true teacher entry points should stay inside the `(teacher)` tabs group, while future teacher course management detail flows should live in top-level routes outside the tabs tree.
 
 
 ## Notes / Risks
@@ -156,3 +169,4 @@ Feature 11 — Build Teacher Home Screen
 - Safe-area handling now depends on whether a screen owns its own visible header or relies on a headerless layout; future screens should choose wrappers accordingly to avoid either notch overlap or double top spacing.
 - The enroll button mock Alert is a UI-only placeholder. When the backend phase begins, this will be replaced by an actual enrollment insert into Supabase with proper loading and error states.
 - The thumbnail placeholder area on the course detail screen uses an emoji inside a neutral box. This will be replaced with a real `<Image>` component reading from `thumbnailUrl` once course thumbnail assets are introduced.
+- Teacher course management routes must stay out of the `(teacher)` tabs tree once Feature 12 begins, otherwise screens like `new`, `edit`, and `lessons` can appear as unwanted tab bar items.

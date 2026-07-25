@@ -2,7 +2,7 @@
 // Mock data for teacher-side queries.
 
 import type { Teacher, PaymentInfo, Course, Enrollment } from "../types";
-
+import { COURSES } from "./student";
 const TEACHERS: Teacher[] = [
   {
     id: "teacher-1",
@@ -137,4 +137,27 @@ export async function getEnrollmentsByTeacher(
 ): Promise<Enrollment[]> {
   const courseIds = new Set(courses.map((c) => c.id));
   return ENROLLMENTS.filter((e) => courseIds.has(e.courseId));
+}
+// ── Teacher Home helpers ─────────────────────────────────────────────
+// These are home-screen-specific queries. Replace with Supabase calls later.
+
+
+// (You'll import from the place you define COURSES — see Step 1b)
+
+export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
+  return COURSES.filter((c) => c.teacherId === teacherId);
+}
+
+export async function getTeacherHomeSummary(teacherId: string): Promise<{
+  totalCourses: number;
+  pendingCount: number;
+  recentCourses: Course[];
+}> {
+  const courses = await getTeacherCourses(teacherId);
+  const allEnrollments = await getEnrollmentsByTeacher(teacherId, courses);
+  const pendingCount = allEnrollments.filter(
+    (e) => e.status === "pending"
+  ).length;
+  const recentCourses = courses.slice(0, 3);
+  return { totalCourses: courses.length, pendingCount, recentCourses };
 }

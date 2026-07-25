@@ -64,6 +64,30 @@ const en = {
     watch_lesson_order: "Order",
     watch_placeholder_note: "Video player will be available here.",
   },
+  teacher: {
+    tab_home: "Home",
+    tab_enrollments: "Requests",
+    home_greeting: "Welcome, Teacher",
+    home_subtitle: "Here is your activity summary for today",
+    home_overview: "Overview",
+    home_quick_actions: "Quick Actions",
+    home_recent_courses: "Recent Courses",
+    home_no_courses: "No courses yet.",
+    stat_total_courses: "Total Courses",
+    stat_pending: "Pending Requests",
+    stat_lessons: "lessons",
+    stat_free: "Free",
+    action_manage_enrollments: "Manage Enrollment Requests",
+    action_add_course: "Add New Course",
+    action_add_course_title: "Add Course",
+    action_add_course_msg: "This will be available in the next feature.",
+    course_detail_coming_title: "Course Details",
+    course_detail_coming_msg:
+      "Course management will be available in the next feature.",
+    enrollments_placeholder_title: "Manage Requests",
+    enrollments_placeholder_msg:
+      "Student enrollment requests will appear here for review and confirmation.",
+  },
 };
 
 export default en;

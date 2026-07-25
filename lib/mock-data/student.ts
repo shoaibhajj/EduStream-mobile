@@ -7,7 +7,7 @@ export { getAcademicYears, getSubjectsByYear } from "./shared";
 export type EnrollmentStatus = "confirmed" | "pending" | "none";
 // ─── Courses ──────────────────────────────────────────────────────────
 
-const COURSES: Course[] = [
+export const COURSES: Course[] = [
   {
     id: "c-1",
     subjectId: "sub-4",
