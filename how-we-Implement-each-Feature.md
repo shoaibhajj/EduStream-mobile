@@ -4897,3 +4897,500 @@ It must also preserve:
 - reusable patterns that do not assume English-first structure
 
 ---
+
+
+
+# Feature 07 — Create Mock Data Layer
+
+## What this feature does
+
+This feature reorganizes the app’s mock data into a proper data layer under `lib/mock-data/` so that student screens no longer depend on ad hoc shaping or large inline data decisions inside screen files. [file:32]
+
+The visible student flow remains the same:
+- Academic Years
+- Subjects
+- Courses
+- Course Detail
+- Lesson preview / locked states
+
+But the internal structure becomes much cleaner and more future-friendly:
+- shared reference data is separated from student-specific queries
+- teacher-related mock data is prepared for future teacher features
+- profile-related mock data is prepared for future home/profile screens
+- the mock query functions remain async so they can later be swapped for real backend calls with minimal screen changes [file:32]
+
+This is an architectural feature more than a UI feature. The goal is not to add new visible screens yet. The goal is to make the current and upcoming screens consume data in a way that resembles a real app instead of a temporary prototype. [file:32]
+
+---
+
+## Why this feature matters
+
+Up to this point, the student flow already worked with mock data, but the mock data layer was still too narrow. It was enough for the first browse flow, but not enough for the next screens that will need:
+- student profile information
+- teacher information
+- enrollments
+- payment info
+- reusable helper queries
+- cleaner backend-aligned relationships between years, subjects, courses, and lessons [file:32]
+
+This matters because screen code should stay focused on:
+- loading state
+- error state
+- rendering
+- navigation
+- user interaction
+
+It should not also become the place where we manually reconstruct data relationships every time we build a new screen. [file:32]
+
+For a React / Next.js engineer, this is similar to the moment when a project outgrows page-level inline mock arrays and needs a more intentional data-access layer. The difference in React Native is that screens often carry more responsibility for loading, list rendering, touch interactions, and navigation transitions, so keeping them “dumb” is even more valuable. [file:32][web:20]
+
+This feature also protects the project from a common mistake: building fake backend logic directly inside screens and then throwing it away later. Instead, we keep the mock layer small, async, and shaped like future real queries. [file:32]
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the latest repo documents from GitHub before changing anything.
+2. Inspect the current student screens and existing mock-data usage.
+3. Expand the shared type layer in `lib/types.ts`.
+4. Split mock data by concern under `lib/mock-data/`.
+5. Keep the existing student query function signatures stable.
+6. Add richer backend-aligned relationships for upcoming features.
+7. Verify that the existing student screens still behave exactly the same.
+8. Confirm Arabic remains the default and English still works. [file:32]
+
+The key project constraints remained active throughout this feature:
+- mock-data-first only
+- no Supabase yet
+- no Clerk yet
+- Arabic is the default language
+- English is secondary
+- visible UI text must continue using translation keys
+- no unnecessary state-management libraries
+- no fake backend complexity that we will regret later [file:32]
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before touching the code, we re-read the latest versions of:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md` [file:32]
+
+### Why we did it
+
+This mattered for two reasons.
+
+First, the tracker was the source of truth for the current feature numbering. The project had already inserted the Arabic-first localization feature earlier in the sequence, so older feature numbering could no longer be trusted. [file:32]
+
+Second, the architecture docs still describe the eventual real backend stack, but the active implementation mode remains mock-data-first. Re-reading the current docs prevented the mistake of starting backend work too early. [file:32]
+
+### Engineering note
+
+This is a strong repo-driven habit: read the current documents, not your memory of them. In mobile projects, the consequences of architectural drift can show up quickly in navigation, bundling, startup behavior, and screen contracts. [file:32][web:20]
+
+---
+
+## Step 2 — Inspect the current mock-data usage and student screens
+
+### What we did
+
+We checked the existing student screens and confirmed that they were already calling functions from `lib/mock-data/student.ts`, including:
+- `getAcademicYears()`
+- `getSubjectsByYear()`
+- `getCoursesBySubject()`
+- `getCourseDetail()`
+- `getLessonsByCourse()` [file:32]
+
+That meant the app had already started moving in the right direction. The student screens were not hardcoding all of their data inside JSX anymore. [file:32]
+
+### Why we did it
+
+This inspection changed the implementation strategy.
+
+At first glance, “Create Mock Data Layer” might sound like a feature that requires rewriting all student screens. But the current repo state already had the first version of that layer in place. So the real work for Feature 07 was not to invent a data layer from scratch. It was to mature the existing one:
+- add structure
+- add richer types
+- split responsibilities
+- keep screen behavior unchanged [file:32]
+
+### React vs React Native note
+
+This is very similar to auditing a Next.js app before refactoring data utilities. The main difference is that Expo Router screens are native mobile screens, so a messy refactor can affect:
+- loading behavior
+- touch interactions
+- route navigation
+- list rendering performance [web:20][file:32]
+
+That made stability more important than aggressive rewrites.
+
+---
+
+## Step 3 — Expand `lib/types.ts` to support future screens
+
+### What we did
+
+We expanded `lib/types.ts` so that it no longer described only the minimal browse flow. The file now includes types not just for:
+- `AcademicYear`
+- `Subject`
+- `Course`
+- `Lesson`
+- `CourseDetail`
+
+but also for:
+- `Teacher`
+- `StudentProfile`
+- `Enrollment`
+- `EnrollmentStatus`
+- `PaymentInfo` [file:32]
+
+### Why we did it
+
+The next features will need more than browse data.
+
+For example:
+- the student home screen will likely need current profile info
+- profile/payment screens will need payment instructions and student-related state
+- teacher screens will need teacher data and enrollment data
+
+If those types are added too late, screens usually start by inventing temporary shapes inside component files. That increases refactor cost later. [file:32]
+
+So this step deliberately pushed the shared type layer closer to the planned backend shape while still staying lightweight. We did not over-model everything. We only added the fields that are realistic and likely to remain stable. [file:32]
+
+### Engineering lesson
+
+This is one of the most useful “mock-data-first” habits:
+- keep the types realistic
+- keep the data source fake
+- keep the screen contracts stable
+
+That combination gives you fast UI progress without painting yourself into a corner. [file:32]
+
+---
+
+## Step 4 — Split mock data by concern under `lib/mock-data/`
+
+### What we did
+
+We reorganized the mock data into separate modules under `lib/mock-data/`:
+
+- `shared.ts`
+- `student.ts`
+- `teacher.ts`
+- `profile.ts`
+- `index.ts` [file:32]
+
+The responsibility of each file became:
+
+### `shared.ts`
+Owns shared lookup/reference data such as:
+- academic years
+- subjects
+- simple lookup helpers like year-by-id or subject-by-id [file:32]
+
+### `student.ts`
+Owns student-facing course and lesson queries such as:
+- course lists
+- course detail
+- lesson list
+- lesson lookup
+- current student enrollments [file:32]
+
+### `teacher.ts`
+Owns mock teacher-side data such as:
+- teacher records
+- payment info
+- enrollment lookups for teacher workflows [file:32]
+
+### `profile.ts`
+Owns profile-related data such as:
+- current student profile
+- student profile by id [file:32]
+
+### `index.ts`
+Acts as a barrel export so future screens can import from `lib/mock-data` more easily. TypeScript supports re-export patterns like this, which is a clean way to centralize module access as the codebase grows. [web:23]
+
+### Why we did it
+
+This separation matches how the app will actually evolve.
+
+If all mock data lives forever in one `student.ts` file, two bad things happen:
+1. the file turns into a giant dump of unrelated arrays and helper functions
+2. future teacher and profile work starts depending on student-specific mock modules in awkward ways
+
+By splitting concerns now, we make future feature work more predictable and reduce the chance of accidental duplication. [file:32]
+
+### Engineering note
+
+This is not about creating a complex data architecture too early. It is actually the opposite. We are keeping the mock layer intentionally simple, but we are organizing it by responsibility before it becomes messy. [file:32]
+
+---
+
+## Step 5 — Keep existing student query function names stable
+
+### What we did
+
+One of the most important decisions in this feature was to keep the existing student-facing function names stable.
+
+That means the screens could continue calling:
+- `getAcademicYears()`
+- `getSubjectsByYear()`
+- `getCoursesBySubject()`
+- `getCourseDetail()`
+- `getLessonsByCourse()` [file:32]
+
+Internally, the implementation became cleaner, and some data moved into `shared.ts`, but the screens did not need a disruptive API rewrite. [file:32]
+
+### Why we did it
+
+This is exactly the kind of decision that reduces future migration cost.
+
+Today:
+- those functions return local mock arrays
+
+Later:
+- those functions can call Supabase queries or another real data source
+
+If the function names and return shapes stay stable, the screen code changes much less. That is the whole point of a good mock-data layer. [file:32]
+
+### React vs React Native lesson
+
+In React web apps, changing a helper import path can be annoying. In React Native mobile apps, unnecessary data-contract churn can also affect:
+- screen loading code
+- empty states
+- touch-flow testing
+- route behavior across nested screens
+
+So preserving stable screen contracts is especially valuable. [file:32][web:20]
+
+---
+
+## Step 6 — Add richer relationships without adding fake backend complexity
+
+### What we did
+
+We made the mock data more realistic by keeping the relationships clearer between:
+- academic years
+- subjects
+- courses
+- lessons
+- teachers
+- enrollments
+- payment info
+- student profiles [file:32]
+
+We also kept the query functions async even though they are reading local arrays. [file:32]
+
+### Why we did it
+
+Keeping the functions async is not a gimmick. It matters for future compatibility.
+
+A screen that already does:
+- `setLoading(true)`
+- `await getSomething()`
+- `setState(data)`
+- `setLoading(false)`
+
+is much easier to migrate later than a screen built around synchronous temporary assumptions. [file:32]
+
+At the same time, we intentionally avoided building a fake mini-backend inside the app. We did not add:
+- overcomplicated filtering engines
+- fake repositories everywhere
+- invented caching layers
+- extra state libraries
+
+That would create code that feels “architected” but is not actually useful yet. [file:32]
+
+### Engineering lesson
+
+A good mock-data layer should imitate:
+- data shape
+- async behavior
+- naming stability
+
+It should not imitate:
+- every backend implementation detail
+- every future query optimization
+- every future service boundary
+
+That is the difference between useful scaffolding and premature architecture. [file:32]
+
+---
+
+## Step 7 — Preserve the current student behavior after the refactor
+
+### What we did
+
+After restructuring the mock data layer, we verified that the existing student flow still worked the same way:
+- Arabic Years screen loads correctly
+- Arabic subjects appear after tapping a year
+- Arabic course titles appear after tapping a subject
+- Course Detail still renders description and lesson list
+- preview lessons still show the preview badge
+- locked lessons still show the locked badge
+- English toggle still works
+- `npx tsc --noEmit` stays clean
+- Metro shows no console errors [file:32]
+
+### Why we did it
+
+Feature 07 is a structural refactor, not a UI redesign. The success condition is not “the app looks different.” The success condition is:
+- the app behaves the same from the user’s perspective
+- the code becomes cleaner from the engineer’s perspective [file:32]
+
+That is an important kind of progress in a real project. Good architecture work often produces little or no visible change while making future feature work dramatically easier. [file:32]
+
+---
+
+## Problems encountered
+
+### 1. The feature looked more visible than it actually was
+
+At first, it was easy to expect that creating `profile.ts`, `teacher.ts`, and `shared.ts` should immediately produce new UI. But those files are structural preparation for future features, not new screens by themselves. [file:32]
+
+### 2. Existing student screens already used `student.ts`
+
+This changed the nature of the work. The feature was not a fresh data-layer creation from zero. It was a refactor and expansion of an already-started pattern. [file:32]
+
+### 3. It was important not to overbuild
+
+Once the mock layer started growing, it would have been easy to invent extra abstractions or fake service patterns “just in case.” That would have increased complexity without improving the current UI. [file:32]
+
+---
+
+## How those problems were solved
+
+### 1. Accept the structural nature of the feature
+
+We treated this feature as infrastructure work. That made the right success criteria much clearer:
+- same visible behavior
+- cleaner module boundaries
+- richer types
+- more reusable async query helpers [file:32]
+
+### 2. Reuse the good part of the current implementation
+
+Because the existing screens already depended on `lib/mock-data/student.ts`, we did not fight that. We kept the screen-facing API stable and improved the internals around it. [file:32]
+
+### 3. Keep the architecture intentionally small
+
+We added only what upcoming features are likely to need. That meant:
+- realistic types
+- small query-like functions
+- separated concerns
+- no new state library
+- no backend packages
+- no fake complex repository layer [file:32]
+
+---
+
+## React vs React Native lessons from this feature
+
+### 1. “Dumb screens” matter even more on mobile
+
+In web React, a page can often absorb extra shaping logic without immediately feeling painful. In React Native, screens usually already manage:
+- loading states
+- list rendering
+- navigation params
+- touch targets
+- platform-aware layout details
+
+That means pushing data-shaping down into a mock-data layer pays off earlier. [file:32]
+
+### 2. Async mock functions are worth it
+
+Even though the data is local, keeping async function signatures helps mobile screens behave more like real production screens. That makes:
+- loading indicators
+- error handling
+- future backend migration
+
+much more realistic. [file:32]
+
+### 3. Expo Router feels familiar, but the runtime is still native
+
+A React / Next.js engineer will recognize the file-based routing model quickly. But the cost of unstable screen contracts is different in mobile because every route is also a native interaction surface with its own lifecycle and UX expectations. [web:20][file:32]
+
+### 4. Localization discipline still applies in structural features
+
+Even though this feature was mostly about data structure, the Arabic-first rule still mattered. If any visible text had been added during refactoring, it would still need translation keys. Structural features do not suspend localization rules. [file:32][web:17]
+
+---
+
+## Discussion notes
+
+This feature is a good example of a non-visual feature that still creates major engineering value.
+
+From the outside, nothing dramatic changes. The student flow still looks the same. But inside the project, several things become much healthier:
+- the data layer has clearer responsibility boundaries
+- the next screens have a better foundation
+- future backend migration becomes easier
+- the temptation to recreate mock arrays inside every new screen is reduced [file:32]
+
+It also demonstrates a useful principle for Expo / React Native projects:
+- do not wait for the real backend before designing a clean data contract
+- but also do not pretend the mock layer needs production-grade infrastructure
+
+The correct middle ground is:
+- stable query names
+- realistic return types
+- async behavior
+- small modules organized by concern [file:32]
+
+For this project specifically, `teacher.ts` and `profile.ts` are intentionally ahead of the current UI. That is not wasteful. It is just enough forward preparation to make the next features cleaner without forcing premature backend work. [file:32]
+
+---
+
+## Final output of Feature 07
+
+At the end of this feature, the project has:
+- a structured mock-data layer under `lib/mock-data/`
+- shared reference data separated into `shared.ts`
+- teacher-related mock data in `teacher.ts`
+- profile-related mock data in `profile.ts`
+- student-facing course and lesson queries in `student.ts`
+- a barrel export in `lib/mock-data/index.ts`
+- expanded backend-aligned shared types in `lib/types.ts`
+- existing student screens still working with the same visible behavior
+- Arabic still as the default language
+- English still working as the secondary language [file:32]
+
+This means future screens can now import reusable query-like helpers instead of manually rebuilding data inside each screen component. [file:32]
+
+---
+
+## Completion checklist for Feature 07
+
+Feature 07 is complete when all of these are true:
+
+- `lib/mock-data/` exists as a clear mock data layer. [file:32]
+- Shared reference data is separated from student-specific logic. [file:32]
+- Teacher-related mock data exists in its own module for future screens. [file:32]
+- Profile-related mock data exists in its own module for future screens. [file:32]
+- `lib/types.ts` includes richer backend-aligned shapes. [file:32]
+- Existing student screens still load through async mock functions. [file:32]
+- The current student browse and course detail flow still behaves the same. [file:32]
+- `npx tsc --noEmit` passes cleanly. [file:32]
+- Metro starts without new errors. [file:32]
+- Arabic remains the default experience. [file:32]
+- English still works. [file:32]
+- No backend packages were added for this feature. [file:32]
+
+---
+
+## Official references
+
+- Expo Localization guide: [https://docs.expo.dev/guides/localization/](https://docs.expo.dev/guides/localization/) [web:17]
+- Expo Router documentation: [https://docs.expo.dev/versions/latest/sdk/router/](https://docs.expo.dev/versions/latest/sdk/router/) [web:20]
+- TypeScript modules and re-exports: [https://www.typescriptlang.org/docs/handbook/modules.html](https://www.typescriptlang.org/docs/handbook/modules.html) [web:23]
+
+
+

@@ -1,12 +1,16 @@
 # EduStream Mobile — Progress Tracker
 
+
 ## Current Status
-Feature 06 complete — Shared design foundations are built and wired into all existing student screens. `components/ui/` now provides ScreenContainer, AppText, PrimaryButton, SecondaryButton, Card, StatusBadge, EmptyState, and LoadingScreen, all built on NativeWind classes with no hardcoded colors. `constants/design.ts` centralizes spacing, radius, and font-size tokens for contexts where className isn't available (e.g. `contentContainerStyle`). Academic Years, Subjects, Courses, and Course Detail screens were all migrated from ad-hoc inline styles to the shared components. Arabic remains the default and RTL layout still renders correctly; English toggle confirmed working across all migrated screens.
+Feature 07 complete — The mock data layer is now structured under `lib/mock-data/` with clear separation for shared reference data, student queries, teacher queries, and profile queries. Existing student screens still show the same visible behavior, but now load through a cleaner async mock-data layer designed to be swapped with real backend implementations later. Arabic remains the default experience, English still works through the toggle, and local verification passed with clean TypeScript and no Metro console errors.
+
 
 ## Next Up
-Feature 07 — Create Mock Data Layer
+Feature 08 — Build Student Home Screen
+
 
 ## Build Progress
+
 
 ### Completed
 - 01 — Create Expo Project
@@ -15,12 +19,14 @@ Feature 07 — Create Mock Data Layer
 - 04 — Add Arabic-First Localization Foundation
 - 05 — Build Course Detail + Lesson List + Preview/Locked States
 - 06 — Build Shared Design Foundations
+- 07 — Create Mock Data Layer
+
 
 ### In Progress
 - None
 
+
 ### Not Started
-- 07 — Create Mock Data Layer
 - 08 — Build Student Home Screen
 - 09 — Build Subject/Course Browsing Screens
 - 10 — Build Course Detail and Lessons Screens
@@ -31,6 +37,7 @@ Feature 07 — Create Mock Data Layer
 - 15 — Polish UI and Empty/Error States
 - 16 — Prepare First APK Build
 - 17 — Backend Phase (deferred for now per mock-data-first plan)
+
 
 ## Session Notes
 - Confirmed Feature 01 baseline remained stable before continuing.
@@ -69,6 +76,13 @@ Feature 07 — Create Mock Data Layer
 - Verified no remaining hardcoded hex colors, no duplicated card style strings, and no raw `padding: 16` values remain in `app/` or `components/` via targeted `grep` checks.
 - Confirmed `npx tsc --noEmit` runs clean and `npx expo start --clear` starts without errors after the full migration.
 - Confirmed Arabic remains default and RTL layout still renders correctly across all migrated screens; English toggle confirmed working on each.
+- Restructured the mock data layer under `lib/mock-data/` into shared, student, teacher, and profile concerns.
+- Expanded `lib/types.ts` with backend-aligned types for teachers, profiles, enrollments, and payment information.
+- Kept student screen behavior unchanged while moving mock relationships and query-like shaping into the data layer.
+- Confirmed the existing student browse and course detail flow still works after the mock-data refactor.
+- Confirmed Arabic remains the default app experience after the refactor, and English still works through the existing toggle.
+- Verified the new `shared.ts`, `teacher.ts`, and `profile.ts` files are intentionally structural for upcoming features and do not need visible UI yet.
+
 
 ## Architecture Decisions
 - Keep the project UI-first and mock-data-first until the dedicated backend phase.
@@ -83,6 +97,9 @@ Feature 07 — Create Mock Data Layer
 - Lesson access logic (preview vs locked) lives in the screen for now using the `isPreview` field. When Supabase is connected, this will be replaced by checking enrollment status from RLS-protected queries.
 - All shared visual primitives live in `components/ui/` and are the required building blocks for new screens going forward — no new screen should re-declare card, button, or badge styles inline.
 - Spacing, radius, and typography size tokens used outside `className` contexts live in `constants/design.ts`; color tokens remain the single responsibility of `constants/colors.ts` and `tailwind.config.js`.
+- Mock data is now intentionally separated by concern under `lib/mock-data/` so upcoming student home, teacher dashboard, and profile/payment screens can import stable query-like functions instead of embedding ad hoc arrays in screen files.
+- `shared.ts` owns reusable academic hierarchy lookup data, while `student.ts`, `teacher.ts`, and `profile.ts` own role-specific query functions.
+
 
 ## Notes / Risks
 - NativeWind v4 configuration must follow the current installation flow exactly; older Babel examples can break Metro bundling.
@@ -94,3 +111,4 @@ Feature 07 — Create Mock Data Layer
 - Feature numbering shifted by +1 from Feature 05 onward due to the insertion of the localization feature at position 04.
 - The Watch screen is a placeholder only. Real video playback (`expo-av` + WebView embed) is deferred to a later feature. The screen already receives the correct `lessonId` param via Expo Router dynamic routing.
 - Going forward, any new screen that needs a card, button, badge, empty state, or loading spinner must import from `components/ui/` rather than writing new inline Tailwind class strings, to keep the design system from fragmenting again.
+- The new `teacher.ts` and `profile.ts` mock modules are expected to have no visible effect until the teacher, home, profile, and payment-related screens are implemented.
