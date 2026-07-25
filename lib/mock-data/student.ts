@@ -129,9 +129,9 @@ const COURSE_DETAILS: CourseDetail[] = [
     title: "رياضيات أساسية",
     description: "تغطية كاملة للرياضيات الأساسية لطلاب الصف التاسع.",
     teacherName: "أ. رامي سليم",
-    price: 10000,
+    price: 0,
     lessonCount: 6,
-    isFree: false,
+    isFree: true,
     thumbnailUrl: null,
   },
   {

@@ -30,6 +30,7 @@ export default function StudentLayout() {
           title: t("student.home_my_courses"),
           tabBarLabel: t("student.home_my_courses"),
           headerTitle: "EduStream",
+          headerShown: false, // ← this must stay false
         }}
       />
       <Tabs.Screen

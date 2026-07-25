@@ -45,6 +45,9 @@ const ar = {
     home_pending_badge: "قيد المراجعة",
     home_continue_button: "متابعة",
     home_view_all: "عرض الكل",
+    browse_pick_year: "اختر السنة الدراسية",
+    browse_pick_subject: "اختر المادة",
+    courses_in_subject: "الدورات في مادة",
   },
 };
 

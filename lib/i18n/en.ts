@@ -45,6 +45,9 @@ const en = {
     home_pending_badge: "Under Review",
     home_continue_button: "Continue",
     home_view_all: "View All",
+    browse_pick_year: "Choose an academic year",
+    browse_pick_subject: "Choose a subject",
+    courses_in_subject: "Courses in",
   },
 };
 

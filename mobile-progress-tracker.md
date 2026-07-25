@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 08 complete — The student home screen is now the default student landing experience, built with mock-data-driven overview sections for enrolled courses, pending enrollments, and featured courses. The student area now uses a cleaner Expo Router structure with Home and Browse as the visible tab entry points, while course and watch detail screens were moved outside the tab tree so they remain reachable without appearing in the bottom navigation. Arabic remains the default experience, RTL was verified first, English still works, and local verification passed after the navigation restructure and typed-route fixes. 
+Feature 09 complete — The student subject/course browsing flow is now polished and connected from the student home experience through academic year, subject, course list, and course detail using the mock data layer only. Arabic remains the default experience, RTL was rechecked after the browsing refinements, English still works for the same flow, and local verification passed after the nested Expo Router header cleanup and safe-area handling adjustments.
 
 
 ## Next Up
-Feature 09 — Build Subject/Course Browsing Screens
+Feature 10 — Build Course Detail and Lessons Screens
 
 
 ## Build Progress
@@ -21,6 +21,7 @@ Feature 09 — Build Subject/Course Browsing Screens
 - 06 — Build Shared Design Foundations
 - 07 — Create Mock Data Layer
 - 08 — Build Student Home Screen
+- 09 — Build Subject/Course Browsing Screens
 
 
 ### In Progress
@@ -28,7 +29,6 @@ Feature 09 — Build Subject/Course Browsing Screens
 
 
 ### Not Started
-- 09 — Build Subject/Course Browsing Screens
 - 10 — Build Course Detail and Lessons Screens
 - 11 — Build Teacher Home Screen
 - 12 — Build Teacher Course Management UI
@@ -94,6 +94,17 @@ Feature 09 — Build Subject/Course Browsing Screens
 - Confirmed Arabic home layout was visually tested first in RTL, then rechecked in English after the same navigation changes.
 - Confirmed mock-data-driven content renders on Home without embedding arrays directly in the screen component.
 - Confirmed the tab bar now shows only the intended student destinations instead of detail routes.
+- Refined the subject/course browsing flow under the current Feature 09 scope using the tracker numbering as the source of truth.
+- Fixed the broken subjects empty-state translation key so browse empty states now render valid localized text instead of a placeholder key.
+- Added localized browse-screen titles and section labels for academic year selection, subject selection, and subject course browsing.
+- Loaded year and subject metadata from the mock data layer so nested browse screens show contextual headers without embedding lookup logic inside components.
+- Fixed RTL-sensitive course list spacing by replacing directional margin usage with end-safe spacing.
+- Updated the root Expo Router stack so hidden parent headers no longer leak route-group labels like `(student)` into the visible UI.
+- Confirmed the remaining visible header is the intended nested browse stack header, with screen titles controlled by `title` options rather than route names.
+- Reused `ScreenContainer` for headerless screens where safe-area padding is needed after removing the native header.
+- Confirmed the student home greeting no longer renders under the device notch/camera area after applying the safe-area wrapper.
+- Verified local flow works from Home → Browse → Academic Year → Subject → Course List → Course Detail in Arabic first, then English.
+- Confirmed `npx tsc --noEmit` still passes after the browsing-flow refinements and navigation header cleanup.
 
 
 ## Architecture Decisions
@@ -113,6 +124,8 @@ Feature 09 — Build Subject/Course Browsing Screens
 - `shared.ts` owns reusable academic hierarchy lookup data, while `student.ts`, `teacher.ts`, and `profile.ts` own role-specific query functions.
 - The student area now uses a tabs-plus-nested-browse-stack structure: visible student entry points stay in the tab bar, while detail routes live outside the tab tree and are pushed as standalone dynamic screens.
 - Dynamic navigation should follow Expo Router typed-route-safe patterns for parameterized screens when string interpolation causes route typing conflicts.
+- Parent navigator headers should stay hidden when a nested child navigator is responsible for the visible page header, to avoid duplicate headers or leaked route-group labels.
+- `ScreenContainer` should be the default outer wrapper for headerless full-screen pages that need safe-area protection; screens with visible native headers should only add safe-area edges when visually necessary.
 
 
 ## Notes / Risks
@@ -128,3 +141,4 @@ Feature 09 — Build Subject/Course Browsing Screens
 - The new `teacher.ts` and `profile.ts` mock modules are expected to have no visible effect until the teacher, home, profile, and payment-related screens are implemented.
 - Expo Router route restructuring can easily create confusion between route groups, visible tabs, and standalone detail routes; future navigation changes should keep top-level destinations and pushed detail screens clearly separated.
 - Dynamic routes should be rechecked with TypeScript after any file move so generated typed-route definitions stay aligned with the current app tree.
+- Safe-area handling now depends on whether a screen owns its own visible header or relies on a headerless layout; future screens should choose wrappers accordingly to avoid either notch overlap or double top spacing.

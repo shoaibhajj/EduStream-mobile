@@ -7,6 +7,7 @@ import {
   StatusBadge,
   LoadingScreen,
   EmptyState,
+  ScreenContainer,
 } from "../../components/ui";
 import { Spacing } from "../../constants/design";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -131,51 +132,53 @@ export default function CourseDetailScreen() {
     return <EmptyState message={error ?? t("student.error_load_course")} />;
 
   return (
-    <View className="flex-1 bg-background">
-      <FlatList
-        data={lessons}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: Spacing.base }}
-        ListHeaderComponent={
-          <View className="mb-6">
-            {/* Course title */}
-            <AppText variant="sectionTitle" className="mb-1">
-              {course.title}
-            </AppText>
-
-            {/* Teacher */}
-            <AppText variant="muted" className="mb-3">
-              {t("student.by_teacher")}: {course.teacherName}
-            </AppText>
-
-            {/* Description */}
-            <AppText variant="secondary" className="mb-4 leading-5">
-              {course.description}
-            </AppText>
-
-            {/* Price row */}
-            <View className="flex-row items-center justify-between mb-5">
-              <AppText variant="price">
-                {course.price.toLocaleString("ar-SA")}{" "}
-                {t("student.price_suffix")}
+    <ScreenContainer>
+      <View className="flex-1 bg-background">
+        <FlatList
+          data={lessons}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: Spacing.base }}
+          ListHeaderComponent={
+            <View className="mb-6">
+              {/* Course title */}
+              <AppText variant="sectionTitle" className="mb-1">
+                {course.title}
               </AppText>
-              <PrimaryButton
-                label={t("student.enroll_button")}
-                onPress={() => {}}
-              />
-            </View>
 
-            {/* Lessons section header */}
-            <AppText variant="sectionTitle" className="mb-3">
-              {t("student.lessons_header")}
-            </AppText>
-          </View>
-        }
-        ListEmptyComponent={<EmptyState message={t("student.no_lessons")} />}
-        renderItem={({ item }) => (
-          <LessonRow lesson={item} onPress={handleLessonPress} />
-        )}
-      />
-    </View>
+              {/* Teacher */}
+              <AppText variant="muted" className="mb-3">
+                {t("student.by_teacher")}: {course.teacherName}
+              </AppText>
+
+              {/* Description */}
+              <AppText variant="secondary" className="mb-4 leading-5">
+                {course.description}
+              </AppText>
+
+              {/* Price row */}
+              <View className="flex-row items-center justify-between mb-5">
+                <AppText variant="price">
+                  {course.price.toLocaleString("ar-SA")}{" "}
+                  {t("student.price_suffix")}
+                </AppText>
+                <PrimaryButton
+                  label={t("student.enroll_button")}
+                  onPress={() => {}}
+                />
+              </View>
+
+              {/* Lessons section header */}
+              <AppText variant="sectionTitle" className="mb-3">
+                {t("student.lessons_header")}
+              </AppText>
+            </View>
+          }
+          ListEmptyComponent={<EmptyState message={t("student.no_lessons")} />}
+          renderItem={({ item }) => (
+            <LessonRow lesson={item} onPress={handleLessonPress} />
+          )}
+        />
+      </View>
+    </ScreenContainer>
   );
 }

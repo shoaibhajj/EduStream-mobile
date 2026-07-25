@@ -6368,3 +6368,446 @@ One important caution to remember for future work:
 
 a mobile home screen can attract too many ideas too early.
 For this phase, the correct implementation is the smallest useful student landing screen built on mock data and shared UI foundations, not a full dashboard platform.
+
+
+-----
+
+```md
+# Feature 09 — Build Subject/Course Browsing Screens
+
+## What this feature does
+
+Feature 09 takes the already-working student browse flow and turns it into a more polished, cohesive browsing experience that fits naturally after the new student home screen.
+
+The final browsing path now behaves like a real student discovery flow:
+
+- Student Home
+- Academic Year selection
+- Subject selection
+- Course list
+- Course detail
+- Watch placeholder
+
+This feature did **not** introduce backend work, teacher flows, payment logic, or any real data integration. It stayed fully inside the mock-data-first phase and focused on improving the student browsing experience using the current route structure, shared UI layer, and mock data layer.
+
+The key result of this feature is that the browse flow no longer feels like a set of separate working screens. It now feels like one connected product path.
+
+## Why this feature matters
+
+A browse flow is one of the core paths in an education app. A student needs to understand where they are, move deeper into the hierarchy confidently, and reach course detail screens without confusion.
+
+For EduStream, that means the student should be able to move cleanly from:
+
+- academic year
+- to subject
+- to course
+- to course detail
+
+If that path feels weak at any level, the whole app feels less intentional.
+
+This feature also mattered because the repo instructions explicitly said that the **current numbering and order in `mobile-progress-tracker.md` is the source of truth**. That was important because earlier feature numbering had shifted after the insertion of the Arabic-first localization feature. So this implementation had to follow the tracker exactly and be documented as **Feature 09**.
+
+For a React / Next.js engineer, this feature is a good reminder that route existence is not the same as route quality. On the web, a page can exist but still feel unfinished if it lacks hierarchy context, good titles, or smooth navigation. In Expo Router, the same is true, but native headers, route nesting, back behavior, and safe-area layout all make the quality of that route flow more visible.
+
+## Original implementation plan
+
+The practical implementation plan for Feature 09 became:
+
+1. Re-read the repo documents before changing anything.
+2. Inspect the current student browse flow and route structure.
+3. Verify what the mock data layer already provides.
+4. Refine the Academic Years, Subjects, and Courses screens only as much as needed to make the browsing flow feel complete.
+5. Keep all visible UI text inside translation files.
+6. Reuse the shared design foundations from Feature 06.
+7. Verify Arabic first, then English.
+8. Fix any nested navigation/header issues discovered during polish.
+9. Keep the work fully mock-data-first.
+
+The feature sounded simple at first, but in practice it became a combination of:
+
+- browse screen polish
+- nested navigation cleanup
+- mobile-specific layout correction
+
+That is why the implementation included both UI refinement and navigation-architecture work.
+
+## Step 1 — Re-read the repo documents before implementation
+
+Before touching code, we re-read:
+
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+This was important for the same reason it mattered in earlier features: the repo documents are the real implementation contract, not earlier chat memory.
+
+This step re-confirmed four active constraints:
+
+- the app is still mock-data-first
+- Arabic is the default language
+- English is secondary
+- all visible text must use translation keys
+
+That meant this feature could not expand into Supabase, Clerk, hardcoded strings, or English-first layout assumptions.
+
+## Step 2 — Inspect the current browse flow and identify what already exists
+
+We inspected the browse routes under:
+
+- `app/(student)/browse/index.tsx`
+- `app/(student)/browse/[yearId]/index.tsx`
+- `app/(student)/browse/[yearId]/[subjectId]/index.tsx`
+
+We also inspected the surrounding route structure:
+
+- `app/(student)/_layout.tsx`
+- `app/(student)/browse/_layout.tsx`
+- `app/student-course/[courseId].tsx`
+- `app/student-watch/[lessonId].tsx`
+
+This inspection showed that the flow already worked at a basic level:
+
+- browse opened
+- a year could open subjects
+- a subject could open courses
+- a course could open course detail
+
+But several quality issues were still present:
+
+- one empty state still used a placeholder translation key
+- browse screens needed stronger contextual titles
+- one course-list spacing class was not RTL-safe
+- the nested header structure was leaking `(student)` into the visible UI
+- after header cleanup, the student home greeting could render under the device notch
+
+So this feature was not a greenfield build. It was a polish-and-cohesion feature for a partially complete flow.
+
+## Step 3 — Verify the mock data layer before changing screen logic
+
+We inspected the mock data layer, especially:
+
+- `lib/mock-data/student.ts`
+- `lib/mock-data/shared.ts`
+
+The important finding was that the data layer was already strong enough for this feature. It already had:
+
+- `getAcademicYears()`
+- `getSubjectsByYear()`
+- `getCoursesBySubject()`
+- `getYearById()`
+- `getSubjectById()`
+
+That mattered because the repo instructions explicitly said that if browse screens needed helper/query logic, that logic should live in the mock data layer rather than inside screen files.
+
+In this case, the necessary lookup helpers already existed. So the correct decision was **not** to invent extra abstractions or move data shaping into screen components.
+
+For a React / Next.js engineer, this is a useful architectural lesson: sometimes the right refactor is not adding a new helper but recognizing that the clean helper already exists and should simply be reused.
+
+## Step 4 — Fix the broken empty state and complete localization coverage
+
+One of the first real bugs we found was that the subjects screen still used a placeholder translation key instead of a real empty-state message.
+
+That meant the UI could show a raw key-like fallback instead of a proper localized message. We replaced it with the correct localized key and also added the missing browse-related translation keys needed for a stronger browsing flow.
+
+The relevant translation files remained:
+
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+We added browse-specific keys such as:
+
+- academic year selection prompt
+- subject selection prompt
+- subject-specific course list context
+
+This step mattered because Feature 04 made localization a permanent implementation rule. Once the localization foundation existed, every later feature had to keep participating in it.
+
+This is a good example of how a “small UI polish feature” still includes real i18n work.
+
+## Step 5 — Improve screen titles and browsing context
+
+We improved the browse screens by making their titles reflect the current level of the hierarchy more clearly.
+
+The title behavior became:
+
+- browse root → academic years title
+- year screen → selected year name
+- subject screen → selected subject name
+
+We also added short context labels inside the list content so the user does not rely only on the native header for orientation.
+
+This mattered because browsing is hierarchical. A student who taps into a year and then into a subject should immediately understand where they are.
+
+On the web, larger layouts, breadcrumbs, sidebars, or the browser URL can help communicate hierarchy. On mobile, the screen header often carries much more of that responsibility. So getting header titles right is part of navigation UX, not just visual polish.
+
+## Step 6 — Keep the course list RTL-safe and reuse the shared design system
+
+We reviewed the course list screen and found one directional spacing issue: a class using hardcoded right-side spacing instead of logical end-side spacing.
+
+That was changed to an RTL-safe form so the UI behaves correctly in Arabic.
+
+We also kept the browse screens aligned with the shared UI foundation from Feature 06 by continuing to use shared primitives such as:
+
+- `AppText`
+- `Card`
+- `EmptyState`
+- `LoadingScreen`
+- spacing tokens from `constants/design.ts`
+
+This step mattered because Feature 09 explicitly required reuse of the shared design layer. That was not just about visual consistency. It also prevented the project from drifting back into duplicated one-off screen styling after Feature 06 had already extracted the common UI layer.
+
+For a web engineer, this is the same discipline as continuing to build new pages from a design system instead of letting repeated ad hoc utility markup creep back in.
+
+## Step 7 — Make the browsing flow feel connected from the Home screen
+
+Feature 08 had already introduced the student home screen. Feature 09 had to make sure the student could move from Home into Browse as one intentional product path.
+
+The target path became:
+
+1. Open student home
+2. Tap browse CTA
+3. Open academic years
+4. Tap a year
+5. Open subjects
+6. Tap a subject
+7. Open courses
+8. Tap a course
+9. Open course detail
+
+This is a small step in raw code, but a major step in product coherence. The home screen is no longer just an overview surface. It now properly hands the student into the discovery flow.
+
+A screen does not become strong just because it exists. It becomes strong when it participates correctly in the app’s real task flow.
+
+## Step 8 — Fix the leaked nested header problem in Expo Router
+
+This became one of the most important practical issues in the feature.
+
+After the browse polish work, the app still showed an unexpected `(student)` label above the expected screen titles such as:
+
+- `السنوات الدراسية`
+- `الصف العاشر`
+- `الرياضيات`
+
+At first glance, it was easy to wonder if this was coming from Expo Go itself. It was not. It came from the app’s own nested navigator structure.
+
+The project had:
+
+- a root `Stack`
+- a nested student `Tabs` layout
+- a nested browse `Stack`
+
+Because multiple navigators can render their own headers, the parent navigator was still contributing an unwanted header layer. The visible `(student)` label was effectively a leaked route-group-level header rather than a desired screen title.
+
+The fix was architectural:
+
+- hide the parent/root header when a nested child navigator should own the visible header
+- keep the browse stack as the title-owning navigator
+- let child screens control header text through `title` options instead of fallback route names
+
+This is one of the clearest Expo Router lessons in the feature: in nested navigation, a “header bug” is usually really a **navigator ownership** bug.
+
+## Step 9 — Clarify the difference between route name, visible title, and header ownership
+
+While fixing the header problem, we also clarified an important navigation concept worth preserving for future sessions.
+
+Three different things were involved:
+
+1. `name`
+2. `headerShown`
+3. `title` / `headerTitle`
+
+The useful mental model is:
+
+- `name` = which route file this configuration belongs to
+- `headerShown` = whether that navigator level should render a visible header
+- `title` = what text the user should actually see in that header
+
+That means `name="index"` does **not** mean the user should see `index` in the UI. It only identifies the route being configured. If no `title` is provided, Expo Router / React Navigation may fall back to a route-derived label.
+
+This mattered because later features will likely add more nested route structures. Understanding the difference between route identity and visible title will help prevent the same bug from returning.
+
+## Step 10 — Fix the safe-area issue after removing the header
+
+Once the leaked parent header was removed, another mobile-specific issue became visible: the home greeting content could slide under the device notch / camera area.
+
+This happened because the old visible header had been indirectly creating top spacing. Once that header disappeared, the `ScrollView` content started at the true top edge of the screen.
+
+The project already had a shared wrapper in `components/ui/ScreenContainer.tsx` using `SafeAreaView` from `react-native-safe-area-context`, so the correct fix was not to add arbitrary manual top padding. The correct fix was to reuse the existing safe-area-aware wrapper for headerless screens.
+
+This is a very mobile-specific lesson. On the web, removing a header usually changes spacing only visually. On mobile, removing a header can move content into a physically unsafe display area unless a safe-area-aware wrapper takes over that responsibility.
+
+## Problems encountered
+
+### 1. The browse flow already existed, but still felt unfinished
+
+The first problem was not a crash or type failure. It was a product-quality problem.
+
+The route flow technically worked, but it still felt more like an internal implementation path than a polished student browsing experience.
+
+That is easy to underestimate in mobile work. A route tree can be functionally correct while still feeling weak because hierarchy, screen titles, and navigation ownership are not fully refined.
+
+### 2. One empty state still used a placeholder translation key
+
+This was a small bug, but an important one. It showed that localization discipline had been applied in most places, but not completely.
+
+In an Arabic-first app, even one leftover placeholder key is enough to show that the feature is not fully integrated into the localization system.
+
+### 3. Nested Expo Router headers leaked route-group UI into the visible screen
+
+This was the most confusing bug because it looked like the UI might be showing something from Expo Go.
+
+In reality, it came from our own nested navigation structure. The app had more than one navigator capable of rendering a header, and the wrong one was still visible.
+
+### 4. Safe-area spacing became a visible issue only after fixing the header problem
+
+This is a useful mobile engineering lesson. Once the extra header disappeared, the screen finally revealed its true top position, which exposed that the home greeting was too close to or under the notch area.
+
+That is a good reminder that solving one layout/navigation issue can reveal the next real problem underneath it.
+
+## How those problems were solved
+
+### 1. Treat the feature as a refinement feature, not a greenfield build
+
+Instead of pretending Feature 09 was building the browse flow from zero, we treated it as what it really was: a refinement and cohesion feature for a flow that already partially existed.
+
+That made the right success criteria much clearer:
+
+- better titles
+- better localization completeness
+- stronger hierarchy context
+- cleaner header ownership
+- safer top-level layout behavior
+
+### 2. Fix localization directly instead of working around it
+
+We replaced the broken empty-state key with the correct localized key and added the missing browse-related translation keys in both Arabic and English.
+
+That kept the implementation aligned with the standing project rule that all visible text must live in translation files.
+
+### 3. Keep mock data logic in the mock data layer
+
+We did not move lookup logic into screen files. Instead, we reused the existing helper functions from `lib/mock-data/shared.ts` and `lib/mock-data/student.ts`.
+
+That preserved the architecture rule that data shaping belongs in the mock layer, not in route components.
+
+### 4. Make the nested child navigator own the visible header
+
+We solved the leaked `(student)` header by hiding the parent/root header and letting the nested browse stack own the visible title bar.
+
+Then the child screens could control the visible title correctly through `title` options instead of relying on route-name fallbacks.
+
+### 5. Use the shared safe-area wrapper where the screen becomes headerless
+
+Once the home screen no longer had a visible top header, we reused the existing `ScreenContainer` wrapper so the content stayed inside the device-safe region.
+
+That was a better solution than inventing manual top padding because it uses the correct device insets rather than guessed spacing.
+
+## React vs React Native lessons from this feature
+
+### 1. A working route tree is not the same as a good mobile flow
+
+In React / Next.js, it is possible for a page to technically work while still feeling rough because of breadcrumbs, headings, or poor route transitions.
+
+In React Native, the same is true, but the cost of roughness is higher because there is less screen space and the screen title/header region carries more of the navigation burden.
+
+### 2. Header ownership matters much more in nested mobile navigation
+
+On the web, duplicate layout UI often appears as redundant page chrome.
+
+In Expo Router with nested stacks and tabs, the same mistake appears as duplicate or leaked native headers. That feels more intrusive and more confusing to the user.
+
+### 3. Safe-area handling is part of layout architecture
+
+In web React, removing a page header usually changes spacing visually.
+
+In mobile React Native, hiding a header can move content into the notch/camera region. That means safe-area handling is not optional polish. It is part of correct screen architecture.
+
+### 4. Localization discipline remains active in “small polish” work
+
+This feature was not a localization feature, but localization still mattered in multiple places:
+
+- screen titles
+- prompts
+- empty states
+- browsing labels
+
+That is a useful reminder that once i18n exists, every feature participates in it.
+
+### 5. Shared UI primitives only prove their value when later features actually reuse them
+
+Feature 06 created a shared UI layer. Feature 09 helped prove that the layer is strong enough to support real subsequent screen work without reintroducing duplicated card, text, empty-state, or loading patterns.
+
+## Discussion notes
+
+Feature 09 is a good example of a feature that looks small on the surface but teaches several important mobile engineering lessons.
+
+At first, it appears to be just “improve browse screens.” But in practice it required reasoning about:
+
+- route hierarchy
+- title ownership
+- mock-layer reuse
+- RTL safety
+- i18n completeness
+- mobile safe-area behavior
+
+That combination is why this feature is more valuable than it may first appear.
+
+It also demonstrates a pattern that will matter later in the project:
+
+- build the route
+- make the route usable
+- make the route coherent
+- then fix the navigation-shell details that only become visible once the route is truly used
+
+That sequence is common in mobile apps, where product flow quality emerges over several iterations rather than one giant implementation step.
+
+## Final output of Feature 09
+
+At the end of this feature, the project has:
+
+- a student home screen that routes cleanly into browse
+- a browse root screen for academic years
+- a subject screen for the selected academic year
+- a course list screen for the selected subject
+- cleaner nested stack titles
+- corrected localized empty-state behavior
+- RTL-safe spacing in the course list
+- a fixed root/header ownership structure so route-group labels do not leak into the visible UI
+- safe-area protection on headerless screens where needed
+- the same flow still working in Arabic first, then English
+
+The browsing experience now feels like one connected student journey instead of several separately working route files.
+
+## Completion checklist for Feature 09
+
+Feature 09 is complete when all of these are true:
+
+- The app opens to the student home screen.
+- The student can tap into the browse flow from Home.
+- The browse root screen shows academic years correctly.
+- Tapping an academic year opens the correct subject list.
+- Tapping a subject opens the correct course list.
+- Tapping a course opens the course detail screen.
+- All visible browsing UI text comes from translation files.
+- Arabic is the default visible experience.
+- English still works for the same flow.
+- RTL layout remains safe in the browse path.
+- Mock data is still loaded through the mock data layer rather than embedded directly in screens.
+- Shared UI primitives are reused instead of one-off duplicated screen markup.
+- Route-group labels such as `(student)` no longer leak into the visible UI header.
+- Headerless screens use safe-area-aware layout protection where needed.
+- `npx tsc --noEmit` passes.
+- `npx expo start --clear` starts without new errors.
+
+## Official references
+
+- Expo Router Stack docs: https://docs.expo.dev/router/advanced/stack/
+- Expo Router common navigation patterns: https://docs.expo.dev/router/basics/common-navigation-patterns/
+- React Navigation safe area guidance: https://reactnavigation.org/docs/handling-safe-area/
+- Expo `react-native-safe-area-context` docs: https://docs.expo.dev/versions/latest/sdk/safe-area-context/
+- `react-native-safe-area-context` SafeAreaView API: https://appandflow.github.io/react-native-safe-area-context/api/safe-area-view/
+```
