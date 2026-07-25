@@ -2,7 +2,13 @@
 // Mock data functions — replace the body of each with a real Supabase query
 // when the backend phase begins. The return types must never change.
 
-import type { AcademicYear, Subject, Course } from "../types";
+import type {
+  AcademicYear,
+  Subject,
+  Course,
+  Lesson,
+  CourseDetail,
+} from "../types";
 
 export async function getAcademicYears(): Promise<AcademicYear[]> {
   return [
@@ -78,4 +84,145 @@ export async function getCoursesBySubject(
     },
   ];
   return all.filter((c) => c.subjectId === subjectId);
+}
+
+export async function getCourseDetail(
+  courseId: string
+): Promise<CourseDetail | null> {
+  const all: CourseDetail[] = [
+    {
+      id: "c-1",
+      subjectId: "sub-3",
+      title: "Physics Fundamentals",
+      description:
+        "دورة شاملة في أساسيات الفيزياء تغطي الميكانيكا والكهرباء والموجات.",
+      teacherName: "Dr. Omar",
+      price: 15000,
+      lessonCount: 4,
+      isFree: true,
+    },
+    {
+      id: "c-2",
+      subjectId: "sub-3",
+      title: "Advanced Mechanics",
+      description:
+        "ميكانيكا متقدمة للطلاب المتفوقين، تشمل القوى والحركة الدورانية.",
+      teacherName: "Ms. Layla",
+      price: 20000,
+      lessonCount: 3,
+      isFree: false,
+    },
+    {
+      id: "c-3",
+      subjectId: "sub-5",
+      title: "Algebra Mastery",
+      description: "إتقان الجبر من الأساسيات حتى المعادلات التربيعية.",
+      teacherName: "Mr. Rami",
+      price: 12000,
+      lessonCount: 3,
+      isFree: true,
+    },
+  ];
+  return all.find((c) => c.id === courseId) ?? null;
+}
+
+export async function getLessonsByCourse(courseId: string): Promise<Lesson[]> {
+  const all: Lesson[] = [
+    // c-1 lessons
+    {
+      id: "l-1",
+      courseId: "c-1",
+      title: "مقدمة في الفيزياء",
+      orderIndex: 1,
+      isPreview: true,
+      durationSeconds: 420,
+      videoUrl: "https://example.com/video/l-1",
+    },
+    {
+      id: "l-2",
+      courseId: "c-1",
+      title: "قوانين نيوتن",
+      orderIndex: 2,
+      isPreview: false,
+      durationSeconds: 540,
+      videoUrl: null,
+    },
+    {
+      id: "l-3",
+      courseId: "c-1",
+      title: "الطاقة والشغل",
+      orderIndex: 3,
+      isPreview: false,
+      durationSeconds: 600,
+      videoUrl: null,
+    },
+    {
+      id: "l-4",
+      courseId: "c-1",
+      title: "الموجات الصوتية",
+      orderIndex: 4,
+      isPreview: false,
+      durationSeconds: 480,
+      videoUrl: null,
+    },
+    // c-2 lessons
+    {
+      id: "l-5",
+      courseId: "c-2",
+      title: "الحركة الدورانية",
+      orderIndex: 1,
+      isPreview: false,
+      durationSeconds: 510,
+      videoUrl: null,
+    },
+    {
+      id: "l-6",
+      courseId: "c-2",
+      title: "قوانين كبلر",
+      orderIndex: 2,
+      isPreview: false,
+      durationSeconds: 630,
+      videoUrl: null,
+    },
+    {
+      id: "l-7",
+      courseId: "c-2",
+      title: "المد والجزر",
+      orderIndex: 3,
+      isPreview: false,
+      durationSeconds: 450,
+      videoUrl: null,
+    },
+    // c-3 lessons
+    {
+      id: "l-8",
+      courseId: "c-3",
+      title: "المعادلات الخطية",
+      orderIndex: 1,
+      isPreview: true,
+      durationSeconds: 360,
+      videoUrl: "https://example.com/video/l-8",
+    },
+    {
+      id: "l-9",
+      courseId: "c-3",
+      title: "المعادلات التربيعية",
+      orderIndex: 2,
+      isPreview: false,
+      durationSeconds: 490,
+      videoUrl: null,
+    },
+    {
+      id: "l-10",
+      courseId: "c-3",
+      title: "المتتاليات والمتسلسلات",
+      orderIndex: 3,
+      isPreview: false,
+      durationSeconds: 520,
+      videoUrl: null,
+    },
+  ];
+  return all
+    .filter((l) => l.courseId === courseId)
+    .sort((a, b) => a.orderIndex - b.orderIndex);
 }

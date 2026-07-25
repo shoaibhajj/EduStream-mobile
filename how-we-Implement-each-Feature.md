@@ -2453,3 +2453,947 @@ These are the most important references for this feature:
 One important caution:
 for Arabic-first support, translating strings is only part of the work.
 RTL behavior must also be considered from the start, especially when building future layouts with directional spacing and alignment assumptions.[web:18]
+
+
+
+---
+
+# Feature 05 — Build Course Detail + Lesson List + Preview/Locked States
+
+## What this feature does
+
+This feature adds the first real **course consumption screen** for the student flow.
+
+It builds:
+- the Course Detail screen
+- the lesson list UI
+- the free preview lesson state
+- the locked lesson state
+- navigation from the Courses screen into Course Detail
+- navigation from a preview lesson into the Watch screen placeholder
+- blocked behavior for locked lessons using mock logic only
+
+This feature still uses **mock/static data only**.
+It does **not** use Supabase, Clerk, real enrollment checks, or real video playback yet.
+
+The final success condition for this feature is:
+- a student can open a course from the course list
+- the Course Detail screen opens correctly
+- lessons render in a tappable list
+- preview lessons are visually distinct from locked lessons
+- preview lessons open the Watch screen placeholder
+- locked lessons do not navigate and instead show blocked behavior
+- Arabic works as the default language
+- English still works as the secondary language
+- the UI remains RTL-safe
+
+---
+
+## Why this feature matters
+
+Up to this point, the student flow could browse into a list of courses, but could not yet enter the actual content structure of a course.
+
+This feature matters because it introduces the first real **content access model** for students:
+- one course
+- multiple lessons
+- one or more preview lessons
+- the rest locked until enrollment
+
+That model is central to the product described in the project overview, where students browse a course, preview one free lesson, and later unlock the rest after payment confirmation.[cite:1]
+
+This feature also matters architecturally because it forces the app to handle:
+- richer data shapes
+- deeper route navigation
+- conditional interaction behavior
+- Arabic-first text and RTL-safe layout decisions
+
+For a React / Next.js engineer, this is similar to moving from:
+- a listing page
+to
+- a detail page with nested actionable items
+
+But in React Native, that move also includes mobile interaction patterns like:
+- large tappable rows
+- alert-based blocked actions
+- native stack navigation behavior
+- RTL-aware spacing choices
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the repo documents before changing anything
+2. inspect the current student flow and existing placeholder screens
+3. extend the shared type layer for course details and lessons
+4. extend the mock data layer with course-detail and lesson-list functions
+5. add new localization keys for all visible text
+6. build the Course Detail screen
+7. build preview and locked lesson row behavior
+8. build the Watch screen placeholder
+9. connect navigation from Courses to Course Detail
+10. verify the full flow in Arabic first, then English
+
+An important project constraint remained active here:
+- Arabic is the default language
+- all visible text must come from translation keys
+- mock data only
+- no Supabase yet
+- no Clerk yet
+- no hardcoded directional left/right assumptions
+
+So this feature had to behave like a real app flow while still remaining fully local and mock-driven.[cite:1][file:2]
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before changing the code, we re-read the latest versions of:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+### Why we did it
+
+This confirmed the current source of truth before implementation.
+
+That mattered because:
+- feature numbering had changed after the localization feature was inserted
+- Arabic-first rules were now mandatory
+- the app was still mock-data-first
+- the route structure for course and watch screens already existed in the architecture doc
+- the UI context defined how lesson rows, cards, badges, and locked states should look
+
+The architecture doc already defines route paths for:
+- `app/(student)/course/[courseId].tsx`
+- `app/(student)/watch/[lessonId].tsx`[cite:1]
+
+The build plan also places Course Detail as a dedicated student-flow feature, which confirms this feature is part of the intended navigation sequence rather than an optional enhancement.[cite:1]
+
+### Engineering note
+
+This is a strong engineering habit in repo-driven work:
+**read the current docs, not your memory of the docs**.
+
+That matters even more in mobile projects because:
+- startup structure
+- route structure
+- feature sequencing
+- package decisions
+
+tend to have more runtime consequences than in many web-only projects.[file:2]
+
+---
+
+## Step 2 — Inspect the current student flow and placeholder screens
+
+### What we did
+
+We inspected the current repo state before adding new code.
+
+We confirmed that:
+- the student browse flow already existed
+- the `course/[courseId].tsx` screen existed only as a placeholder
+- the `watch/[lessonId].tsx` screen existed only as a placeholder
+- localization files already existed
+- the mock-data layer existed under `lib/mock-data/student.ts`
+- the shared type file existed under `lib/types.ts`[cite:1]
+
+### Why we did it
+
+This step was necessary to avoid rebuilding anything that was already in place.
+
+It also helped identify the minimum required work:
+- extend types
+- extend mock data
+- replace placeholders
+- connect navigation
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to checking:
+- existing route segments
+- data helpers
+- i18n setup
+- current page placeholders
+
+before building a real detail page.
+
+The difference is that in Expo Router those routes are still native mobile screens, not browser pages, even though the file-based structure feels familiar.[cite:1][file:2]
+
+---
+
+## Step 3 — Extend the shared type layer for lessons and course detail
+
+### What we did
+
+We updated `lib/types.ts` to add:
+- `Lesson`
+- `CourseDetail`
+
+The new types included fields such as:
+- `courseId`
+- `title`
+- `orderIndex`
+- `isPreview`
+- `durationSeconds`
+- `videoUrl`
+
+and for the course detail:
+- `id`
+- `subjectId`
+- `title`
+- `description`
+- `teacherName`
+- `price`
+- `lessonCount`
+- `isFree`
+
+### Why we did it
+
+The existing types were enough for the browse flow, but not enough for a real course-detail experience.
+
+The earlier `Course` type was intentionally small:
+- enough to render a card in a course list
+- not enough to describe a course in detail
+- not enough to model lessons within the course
+
+So this feature introduced a second layer of data modeling:
+- list-level course shape
+- detail-level course shape
+- lesson-level item shape
+
+### Why this matters
+
+This is an important backend-alignment decision.
+
+Even though the app still uses mock data, the type shapes were designed to stay close to the planned backend model, especially for fields like:
+- `orderIndex`
+- `isPreview`
+- `videoUrl`
+
+That makes later migration easier because the screen logic can stay stable while only the data source changes.
+
+### React vs React Native note
+
+This part is not specifically “mobile.”
+It is more like good product engineering.
+
+But in a React Native app, getting data shapes right early matters because screens often become tightly tied to:
+- navigation params
+- list rendering
+- interaction states
+- layout assumptions
+
+So good types reduce UI churn later.
+
+---
+
+## Step 4 — Extend the mock data layer with async helper functions
+
+### What we did
+
+We updated `lib/mock-data/student.ts` to add:
+- `getCourseDetail(courseId)`
+- `getLessonsByCourse(courseId)`
+
+These functions remained `async`, just like the earlier mock-data helpers.
+
+The lesson mock records included both preview and locked lessons so the screen could render mixed access states.
+
+### Why we did it
+
+The current project is still mock-data-first, and the progress tracker explicitly says backend setup remains intentionally deferred for now.[cite:1]
+
+That means the new screen needed realistic local data, not placeholder inline arrays inside the screen itself.
+
+We kept the mock helpers in the data layer because that preserves a clean separation:
+- screen = presentation and interaction
+- helper = data retrieval shape
+
+### Why this matters
+
+This is one of the biggest “build it like a real app even before the backend exists” decisions.
+
+If the screen directly hardcodes large arrays inside the component:
+- the component becomes noisy
+- future backend migration becomes harder
+- testing the route flow becomes less realistic
+
+By keeping mock data in async functions, we make the future swap easier:
+- today: return arrays
+- later: query Supabase
+
+The component can keep calling the same function names.
+
+### React vs React Native note
+
+For a Next.js engineer, this is like keeping a temporary repository layer or service function instead of stuffing mock JSON into the page component.
+
+The difference is that mobile screens often hold more UI state locally, so preserving clean separation in the data layer helps prevent screen files from becoming overloaded.
+
+---
+
+## Step 5 — Add localization keys for all new visible UI text
+
+### What we did
+
+We added new keys to:
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+These keys covered:
+- course detail labels
+- teacher label
+- lessons header
+- empty state text
+- error text
+- free preview badge
+- locked badge
+- preview hint
+- locked hint
+- enroll button label
+- watch screen placeholder text
+- duration label
+
+### Why we did it
+
+Feature 04 established a new project rule:
+all visible UI strings must come from translation files, and Arabic must be the default experience.[file:2][cite:1]
+
+So this feature could not add raw JSX strings such as:
+- `Teacher`
+- `Lessons`
+- `Locked`
+- `Free Preview`
+
+directly inside screen files.
+
+### Why this matters
+
+This is where Arabic-first moved from a rule into day-to-day implementation discipline.
+
+Every new screen now has to assume:
+- Arabic first
+- English second
+- no hardcoded visible strings
+- test both languages
+- avoid layout choices that break in RTL
+
+### React vs React Native note
+
+This is conceptually familiar to web engineers who have used i18n dictionaries.
+
+The important mobile-specific difference is that localization and layout direction affect each other more visibly in dense small-screen UI.
+A short badge or label that looks harmless in English can change row balance in Arabic very quickly, so translation discipline and layout discipline are tightly connected.[file:2]
+
+---
+
+## Step 6 — Build the Course Detail screen route
+
+### What we did
+
+We replaced the placeholder in:
+
+- `app/(student)/course/[courseId].tsx`
+
+with a real screen that:
+- reads `courseId` using `useLocalSearchParams()`
+- loads course detail and lessons together in `useEffect`
+- stores them in local state
+- shows loading and error states
+- renders the course information
+- renders the lesson list with `FlatList`
+
+### Why we did it
+
+The architecture already defines this route as a dynamic student route, so the correct implementation path was to use the route param rather than build a temporary non-route screen.[cite:1]
+
+We used Expo Router param reading because that is the intended way to access dynamic route values in file-based navigation.[cite:1]
+
+We used `FlatList` because React Native’s official docs recommend it for rendering long or structured lists efficiently in mobile apps, and it supports patterns like `ListHeaderComponent`, which fit this screen well.[cite:1]
+
+### Why this matters
+
+This screen is more than a page.
+It is a composed mobile view with:
+- top content
+- list content
+- interactive items
+- loading state
+- empty state
+- error state
+
+Using `FlatList` with `ListHeaderComponent` is a strong mobile pattern because the screen becomes one scrollable surface instead of mixing separate scroll containers awkwardly.[cite:1]
+
+### React vs React Native note
+
+For a React / Next.js engineer, this may feel like:
+- `useRouter().query` or route params
+- fetching data based on URL segment
+- rendering a detail page
+- mapping nested items
+
+But two differences matter:
+
+1. `FlatList` is not just `.map()` with divs.
+   It is a purpose-built native list primitive with performance behavior and list lifecycle assumptions.[cite:1]
+
+2. the route is not a browser URL page transition.
+   It is a native screen navigation event handled through Expo Router and the underlying native navigation stack.[cite:1]
+
+---
+
+## Step 7 — Design the lesson row states: preview vs locked
+
+### What we did
+
+We created lesson rows that visually distinguish access states.
+
+Preview lesson rows show:
+- play icon
+- accent styling
+- preview badge
+- active interaction path
+
+Locked lesson rows show:
+- lock icon
+- muted styling
+- locked badge
+- blocked interaction path
+
+We followed the UI context rules for:
+- card styling
+- badge styling
+- lesson row tapability
+- preview accent use
+- locked muted appearance[ cite:1 ]
+
+### Why we did it
+
+The UI context explicitly says:
+- free preview lessons should show play icon and accent styling
+- locked lessons should show lock icon and muted styling
+- lesson rows should be easy to tap[ cite:1 ]
+
+So this was not just design preference.
+It was the documented UI requirement.
+
+### Why this matters
+
+This is the first place where the student learns the app’s access model visually.
+
+A good lesson list should communicate, at a glance:
+- what can be watched now
+- what requires enrollment
+- what is interactive
+- what is blocked
+
+That reduces confusion before backend logic even exists.
+
+### React vs React Native note
+
+On the web, you might rely more heavily on:
+- hover states
+- tooltips
+- cursor changes
+
+In mobile UI, that does not help much.
+
+Instead, clarity comes from:
+- row color treatment
+- icon choice
+- label/badge language
+- opacity
+- immediate tap feedback
+
+That is why mobile state design must be stronger at first glance.
+
+---
+
+## Step 8 — Add blocked behavior for locked lessons
+
+### What we did
+
+We implemented the lesson press behavior as:
+
+- if `lesson.isPreview === true` → navigate to watch route
+- otherwise → show a native `Alert`
+
+So locked lessons did not navigate.
+
+### Why we did it
+
+The architecture says students can watch a lesson only if it is a free preview or if they have a confirmed enrollment.[cite:1]
+
+Because the app is still mock-data-first and has no real enrollment state yet, we needed a temporary local rule that simulates the same behavior:
+- preview lesson = allowed
+- locked lesson = blocked
+
+We used `Alert` because React Native provides it as a built-in native feedback pattern for simple blocked actions.[cite:1]
+
+### Why this matters
+
+This is a small feature with a very important behavioral meaning.
+
+It teaches the student flow:
+- some lessons are available now
+- others are intentionally blocked
+- blocked does not mean broken
+
+That difference is essential for product trust.
+
+### React vs React Native note
+
+In web React, a blocked action might become:
+- a toast
+- a modal
+- an inline warning
+- a disabled link state
+
+In React Native, `Alert` is often the fastest and most native-feeling way to communicate a simple blocked action without building a custom modal first.[cite:1]
+
+This is one example of a broader mobile engineering principle:
+**use the native primitive first unless the product really needs something custom**.
+
+---
+
+## Step 9 — Build the Watch screen placeholder
+
+### What we did
+
+We replaced the placeholder in:
+
+- `app/(student)/watch/[lessonId].tsx`
+
+with a simple watch placeholder screen that:
+- reads `lessonId` from route params
+- shows translated text
+- confirms the route is working
+- leaves real video playback for a later feature
+
+### Why we did it
+
+The project overview and architecture both include a watch/player path as part of the student flow, but real video playback is a later feature.[cite:1]
+
+So this screen needed to exist now as a navigation target without pretending that the player was already built.
+
+### Why this matters
+
+This is a strong incremental delivery pattern.
+
+Instead of waiting for the entire media stack, we confirmed:
+- route exists
+- param passing works
+- flow works
+- future player screen has a stable entry point
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to creating a routed placeholder page before integrating the real player component.
+
+The difference is that in mobile navigation, placeholder screens are especially useful because they confirm:
+- native route transition
+- back behavior
+- param wiring
+- future feature boundary
+
+before introducing heavier runtime dependencies like media playback.
+
+---
+
+## Step 10 — Connect navigation from the course list into Course Detail
+
+### What we did
+
+We updated the subject-level course list screen so tapping a course pushes:
+
+- `/(student)/course/${item.id}`
+
+using Expo Router navigation.
+
+### Why we did it
+
+The new Course Detail screen is only useful if the existing browse flow can reach it.
+
+The student route tree already existed conceptually as:
+- year
+- subject
+- course
+- watch
+
+So this step connected the old browse flow to the new detail route.
+
+### Why this matters
+
+This is the difference between:
+- a new screen existing in the codebase
+and
+- a new screen actually being part of the product flow
+
+Mobile features are only real when the user can move through them naturally.
+
+### React vs React Native note
+
+This feels very familiar to a web engineer:
+click a card, route to detail page.
+
+But in Expo Router the navigation call results in a native screen push, not browser document navigation.
+So although `router.push()` looks familiar, the runtime behavior is closer to a mobile navigation stack than a URL-only transition.[cite:1]
+
+---
+
+## Step 11 — Make the layout RTL-safe
+
+### What we did
+
+We avoided hardcoded directional styling choices such as:
+- `marginLeft`
+- `marginRight`
+- `paddingLeft`
+- `paddingRight`
+
+Instead, the implementation used RTL-friendly approaches such as:
+- `me-*`
+- `ms-*`
+- layout choices that do not assume English-first visual flow
+
+### Why we did it
+
+Feature 04 introduced the Arabic-first rule that future screens must avoid layout/styling decisions that break RTL.[file:2][cite:1]
+
+React Native also supports logical start/end spacing, which is the safer choice for RTL-aware UI than left/right-specific properties.[cite:1]
+
+### Why this matters
+
+This is one of the most important mobile-i18n habits.
+
+A UI can be fully translated and still feel wrong in Arabic if spacing and row composition silently assume LTR structure.
+
+### React vs React Native note
+
+On the web, a Next.js engineer may rely on:
+- CSS logical properties
+- `dir="rtl"`
+- browser layout correction
+
+In React Native, the equivalent mindset is:
+- avoid left/right assumptions
+- use start/end-safe spacing
+- test the real mobile layout in RTL mode
+
+So the principle is similar, but the APIs and feedback loop are different.[cite:1]
+
+---
+
+## Step 12 — Verify the feature locally in Arabic first, then English
+
+### What we did
+
+We tested the flow end-to-end:
+
+1. open the app in Arabic by default
+2. browse to a subject and open a course
+3. verify course detail content renders
+4. verify preview vs locked lesson states
+5. tap a preview lesson and confirm watch navigation
+6. tap a locked lesson and confirm blocked behavior
+7. switch to English
+8. repeat the same flow
+9. confirm the UI still works in both languages
+
+### Why we did it
+
+This feature was not complete when the files existed.
+It was complete when the real route flow worked with:
+- Arabic default behavior
+- English fallback behavior
+- visual differentiation
+- mock access logic
+- no broken navigation
+
+### Why this matters
+
+This verification step proved:
+- the route chain works
+- the mock data shape is usable
+- translation keys are complete
+- RTL-safe UI holds up
+- the watch placeholder receives the right param
+
+That is the real completion proof.
+
+---
+
+## Problems encountered in Feature 05
+
+### Problem 1 — The existing feature numbering had shifted
+
+The project had inserted Arabic-first localization as the new Feature 04, which meant all later feature numbers moved by +1.[file:2][cite:1]
+
+### Why this mattered
+
+This could easily create documentation drift between:
+- the old build plan
+- the progress tracker
+- the actual implementation order
+
+So the implementation had to explicitly follow the new numbering.
+
+### Problem 2 — Browse-level course data was not enough for a detail screen
+
+The existing `Course` shape worked for course cards, but not for a detail page with:
+- description
+- ordered lessons
+- preview state
+- watch-route navigation target
+
+### Why this mattered
+
+Without extending the data layer first, the screen would either:
+- become full of temporary hacks
+or
+- tightly couple itself to bad mock data structure
+
+### Problem 3 — Localization discipline had to remain strict
+
+The feature added many new visible labels:
+- lessons
+- teacher
+- preview
+- locked
+- watch placeholder
+- enroll button
+
+That created a high risk of slipping back into hardcoded strings.
+
+### Problem 4 — RTL can break small row layouts faster than full screens
+
+Lesson rows are dense UI elements:
+- icon
+- title
+- metadata
+- badge
+
+That makes them more sensitive to directional spacing assumptions than a simple vertical page layout.
+
+### Problem 5 — The watch screen exists before the player exists
+
+This can feel incomplete if not handled deliberately.
+
+### Why this mattered
+
+The placeholder still had to behave like a real product step, not like dead-end scaffolding.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Follow the updated numbering consistently
+
+We treated this implementation as Feature 05 from start to finish and aligned the progress tracking accordingly.[cite:1]
+
+### Solution 2 — Add separate detail and lesson types
+
+Instead of stretching the old list type too far, we introduced proper shapes for:
+- `CourseDetail`
+- `Lesson`
+
+That kept the model cleaner and closer to the future backend design.
+
+### Solution 3 — Add translation keys before finalizing the UI
+
+We treated localization as part of the feature, not cleanup after the feature.
+
+That prevented new hardcoded visible strings from spreading into the codebase.
+
+### Solution 4 — Use start/end-safe spacing and simple row composition
+
+We designed the lesson rows to stay readable in RTL by avoiding left/right-specific assumptions and keeping the composition straightforward.[cite:1]
+
+### Solution 5 — Use a deliberate placeholder for the watch route
+
+Instead of skipping the route or faking a player, we built a real routed placeholder screen.
+That preserved the student flow and created a clean boundary for the later video feature.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — A mobile detail screen is often “header + list,” not arbitrary nested scroll UI
+
+In web React, a detail page might naturally become:
+- a div layout
+- a mapped list
+- maybe a sticky section
+
+In React Native, `FlatList` is a more important primitive much earlier, especially when a screen contains repeated rows and needs to behave well as a single mobile scroll surface.[cite:1]
+
+A useful mental model is:
+- web: `.map()` is often enough
+- mobile: reach for list primitives sooner
+
+## Lesson 2 — File-based routing familiarity transfers, but interaction semantics do not
+
+Expo Router feels familiar to a Next.js developer because it is file-based and uses dynamic route segments.[cite:1]
+
+But the user experience is still native app navigation:
+- push
+- back
+- stack
+- screen transitions
+
+So the route structure transfers well, while the runtime behavior is mobile-first.
+
+## Lesson 3 — Blocked behavior is part of product UX, not an error state
+
+A locked lesson is not a failed route.
+It is an intentional product state.
+
+That mindset is important in mobile apps, where interaction feedback has to be immediate and obvious without relying on hover or browser cues.
+
+## Lesson 4 — Localization and layout are tightly connected in mobile row design
+
+On the web, a large responsive layout may absorb translation differences more easily.
+
+On mobile, especially in list rows, changing language can affect:
+- title wrapping
+- badge width
+- icon spacing
+- row balance
+
+So Arabic-first implementation is not just string replacement.
+It is component-shape awareness.
+
+## Lesson 5 — Placeholder screens are valid engineering milestones in route-driven mobile apps
+
+A routed placeholder is useful when it confirms:
+- route correctness
+- param correctness
+- back-stack correctness
+- future feature boundary
+
+That is often better than rushing a partial heavy integration too early.
+
+---
+
+## Discussion notes for Feature 05
+
+### Why did we create new data types instead of reusing the existing `Course` type everywhere?
+
+Because list-level and detail-level concerns are different.
+
+A list card needs only summary information.
+A detail screen needs richer structured content.
+
+Keeping those shapes separate reduces accidental coupling and makes future backend mapping cleaner.
+
+### Why not add real enrollment logic already?
+
+Because the current project phase is still explicitly mock-data-first, and the progress tracker states backend integration is intentionally deferred for now.[cite:1]
+
+So adding real gating logic here would fight the current project strategy.
+
+### Why use `Alert` for locked lessons instead of building a custom modal?
+
+Because the product need at this stage was simple:
+communicate that the lesson is locked.
+
+`Alert` is enough for that and matches React Native’s built-in native interaction model for simple blocked actions.[cite:1]
+
+A custom modal can come later if the product needs richer upsell or enrollment messaging.
+
+### Why build the watch placeholder now if the player is later?
+
+Because navigation paths should be validated as early as possible.
+
+This confirms:
+- the student flow shape
+- the route naming
+- the param passing
+- the future screen boundary
+
+without introducing media complexity too early.
+
+### What is the main React Native lesson here?
+
+A mobile feature is not only a screen.
+It is usually a combination of:
+- route structure
+- typed data shape
+- local loading state
+- list primitives
+- interaction feedback
+- localization discipline
+- platform-appropriate behavior
+
+That combination becomes visible very quickly once the app moves from simple browse cards into real content flows.
+
+---
+
+## Final output of Feature 05
+
+At the end of this feature, the project had:
+
+- a real Course Detail route under `app/(student)/course/[courseId].tsx`
+- a real Watch placeholder route under `app/(student)/watch/[lessonId].tsx`
+- new shared types for `CourseDetail` and `Lesson`
+- new mock-data helpers for course detail and lesson retrieval
+- lesson list UI using `FlatList`
+- free preview lesson styling
+- locked lesson styling
+- blocked locked-lesson behavior using `Alert`
+- preview-lesson navigation into the Watch placeholder
+- course-list navigation into Course Detail
+- Arabic-first translation coverage for all new visible text
+- English translation coverage for testing and fallback
+- RTL-safe layout decisions for the lesson row UI
+- a stable navigation and data foundation for later player and enrollment features
+
+---
+
+## Completion checklist for Feature 05
+
+Feature 05 is complete when all of these are true:
+
+- `lib/types.ts` includes the new course-detail and lesson types
+- `lib/mock-data/student.ts` includes async helpers for course detail and lessons
+- `lib/i18n/ar.ts` includes all new visible Arabic strings
+- `lib/i18n/en.ts` includes all matching English strings
+- `app/(student)/course/[courseId].tsx` is no longer a placeholder
+- `app/(student)/watch/[lessonId].tsx` is no longer a placeholder-only stub
+- the Courses screen can navigate to Course Detail
+- Course Detail loads by route param
+- the lesson list renders in order
+- preview lessons are visually distinct
+- locked lessons are visually distinct
+- tapping a preview lesson navigates to the Watch screen
+- tapping a locked lesson does not navigate
+- blocked behavior is shown through a native alert
+- Arabic is the default experience
+- all visible new UI text comes from translation keys
+- the layout remains usable in RTL
+- English can still be tested successfully
+- the feature works using mock data only
+- no Supabase or Clerk integration was introduced yet
+
+---
+
+## Official references
+
+These were the most important official references for this feature:
+
+- Expo Router navigation and routing docs: [https://docs.expo.dev/router/navigating-pages/](https://docs.expo.dev/router/navigating-pages/) [cite:1]
+- React Native `FlatList` docs: [https://reactnative.dev/docs/flatlist](https://reactnative.dev/docs/flatlist) [cite:1]
+- React Native `Alert` docs: [https://reactnative.dev/docs/alert](https://reactnative.dev/docs/alert) [cite:1]
+- React Native layout props, including logical spacing like `marginStart`: [https://reactnative.dev/docs/layout-props#marginstart](https://reactnative.dev/docs/layout-props#marginstart) [cite:1]
+
+One important caution:
+for Arabic-first mobile UI, lesson-row design must be tested in RTL first, not only after the English layout looks correct.[file:2][cite:1]

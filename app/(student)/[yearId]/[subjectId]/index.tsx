@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import {  useLocalSearchParams, useRouter } from "expo-router";
 import type { Course } from "../../../../lib/types";
 import { getCoursesBySubject } from "../../../../lib/mock-data/student";
 import { t } from "../../../../lib/i18n";
@@ -16,7 +16,7 @@ export default function CoursesScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+ const router = useRouter();
   useEffect(() => {
     async function load() {
       try {
@@ -65,7 +65,10 @@ export default function CoursesScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (
-          <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70">
+          <TouchableOpacity
+            className="bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70"
+            onPress={() => router.push(`/(student)/course/${item.id}`)}
+          >
             <View className="flex-row justify-between items-start">
               <Text className="text-base font-semibold text-text-primary flex-1 mr-2">
                 {item.title}
