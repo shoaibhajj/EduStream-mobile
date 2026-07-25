@@ -9916,3 +9916,532 @@ These were the most relevant official references for this feature:
 One important caution to remember for future work:
 
 profile and payment screens are one of the easiest places for app scope to expand too quickly. In this phase, the correct implementation is the smallest useful set of mock-data-first, Arabic-first, keyboard-safe forms — not a full account settings platform.
+
+
+---
+
+
+--- TITLE Feature 14 Connect Navigation Flows - What this feature does...
+
+This feature connects and cleans up the full app navigation so the student, teacher, profile, payment, and detail flows behave coherently end-to-end before final polish and APK preparation.
+
+It includes
+- reviewing and fixing the full navigation flow across the existing app
+- confirming the student flow works cleanly from home to browse to academic year to subject to course detail to watch
+- confirming the teacher flow works cleanly from teacher home to courses to create/edit course to lessons
+- resolving the deferred profile-tab and back-navigation concern from Feature 13
+- ensuring visible tab routes and pushed detail/edit routes are clearly separated
+- cleaning up route registrations that no longer match the real file structure
+- keeping all behavior mock-data-only
+
+It does not include
+- Supabase integration
+- Clerk integration
+- real backend persistence
+- APK build work
+- broad visual redesign
+- new product features unrelated to routing
+
+The final success condition for this feature is
+- the app opens correctly to the intended entry point
+- student navigation works cleanly through the full learning flow
+- teacher navigation works cleanly through course-management and profile/payment flows
+- no unwanted screens appear as visible tabs
+- native back behavior is sensible on pushed screens
+- Arabic works first in RTL
+- English still works after the navigation cleanup
+- TypeScript still passes cleanly after the route cleanup
+
+--- TITLE Feature 14 Connect Navigation Flows - Why this feature matters...
+
+By this stage, the app already had most of the important screens
+- student home
+- browse stack
+- course detail
+- watch
+- teacher dashboard
+- teacher course management
+- student profile
+- teacher profile
+- teacher payment info
+
+But having screens is not the same as having a coherent mobile app. A navigation tree can look correct in files while still feeling broken in use if
+- a tab secretly redirects somewhere else
+- a profile screen breaks tab history
+- a pushed detail screen lives in the wrong navigator
+- back navigation returns somewhere confusing
+- route registrations no longer reflect the real file structure
+
+That was the key issue now. The app had enough screens to feel real, so navigation quality started to matter much more. Feature 14 turns the app from a collection of working screens into a role-based app flow that behaves more intentionally.
+
+For a React or Next.js developer, this is similar to realizing that the pages exist but the information architecture is still off. In mobile, that problem is more noticeable because native back behavior is part of the product feel. If route placement is wrong, users feel it immediately.
+
+--- TITLE Feature 14 Connect Navigation Flows - Original implementation plan...
+
+Before implementation, we re-read the current source-of-truth docs from the repo and used the tracker numbering exactly as written.
+
+The practical plan for Feature 14 became
+1. Re-read the repo docs and tracker before changing any navigation.
+2. Audit the current route tree and tab behavior instead of assuming earlier chat guidance was still correct.
+3. Confirm the intended student flow and teacher flow against the current app structure.
+4. Resolve the known profile-tab redirect problem from Feature 13.
+5. Keep visible destinations inside tab groups and pushed detail/edit screens outside tab groups where native back behavior is better.
+6. Remove any route registrations that no longer match real files.
+7. Keep all behavior mock-data-only.
+8. Check Arabic first in RTL, then recheck English.
+9. Run TypeScript again after any route cleanup.
+
+This plan stayed within the project constraints
+- Arabic-first by default
+- all visible UI text through translation keys
+- RTL-safe layout choices
+- mock-data-only
+- no backend integration
+- no unrelated feature expansion
+- minimum UI adjustment needed to support correct navigation clarity
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 1 Re-read the repo documents before navigation cleanup - What we did...
+
+Before changing anything, we re-read
+- mobile-project-overview.md
+- mobile-architecture.md
+- mobile-code-standards.md
+- mobile-ui-context.md
+- mobile-build-plan.md
+- mobile-progress-tracker.md
+- mobile-ai-workflow-rules.md
+
+We treated those repo files and the current tracker order as the source of truth rather than relying on earlier conversation memory.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 1 Re-read the repo documents before navigation cleanup - Why we did it...
+
+This project had already evolved through several route changes
+- student tabs were introduced
+- browse moved into its own nested stack
+- detail screens moved out of the student tab tree
+- teacher course management was separated into tab entry plus pushed management routes
+- profile and payment screens were added in Feature 13
+
+Because of that history, navigation assumptions could easily become stale. The safest approach was to re-read the live repo documents first, then make decisions from the current app architecture rather than old mental models.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 1 Re-read the repo documents before navigation cleanup - Engineering note...
+
+This was especially important because the tracker already recorded a deferred issue from Feature 13
+- the temporary profile-tab and back-navigation concern
+
+Feature 14 was the planned cleanup point for that issue, so the re-read confirmed that fixing profile-tab navigation was not optional side work. It was part of the intended scope.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 2 Audit the current route structure and navigator responsibilities - What we did...
+
+We reviewed the live route tree and identified the current structure
+- `app/index.tsx` redirects to the student area
+- `app/(student)/_layout.tsx` owns visible student tabs
+- `app/(student)/browse/_layout.tsx` owns the nested browse stack headers
+- `app/student-course/[courseId].tsx` and `app/student-watch/[lessonId].tsx` live outside the student tabs as pushed detail screens
+- `app/(teacher)/_layout.tsx` owns visible teacher tabs
+- `app/teacher-course/...` owns pushed create/edit/lesson management screens
+- `app/profile/student.tsx`, `app/profile/teacher.tsx`, and `app/profile/payment.tsx` are top-level profile-related screens registered in the root stack
+
+We also reviewed how these screens were actually entered from the app UI.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 2 Audit the current route structure and navigator responsibilities - Why we did it...
+
+In Expo Router, navigation quality depends heavily on which navigator owns which screen.
+
+A screen can be valid in file-system routing terms and still be placed poorly in product terms. In this app, the intended rule was
+- tabs own top-level destinations
+- pushed flows own detail, edit, and management screens
+- native back should work naturally for pushed screens
+- route-group labels should not leak into visible headers
+
+Auditing the current structure first made it easier to spot what was already correct and what still needed cleanup.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 2 Audit the current route structure and navigator responsibilities - Important finding...
+
+The student browse stack and teacher course-management flow were already mostly following the right architecture.
+
+The main remaining weakness was the profile tab pattern. Both the student and teacher profile tabs were still implemented as redirect-style screens using `router.replace()`, which created unnecessary history disruption and was exactly the kind of pattern the tracker had warned about.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 3 Fix the profile-tab redirect pattern - What we did...
+
+We replaced the broken redirect screens
+- `app/(student)/profile.tsx`
+- `app/(teacher)/profile.tsx`
+
+Instead of using `router.replace()` inside `useEffect`, each file now directly re-exports the shared profile screen component for its role.
+
+The student tab screen became a direct re-export of the student profile screen.
+The teacher tab screen became a direct re-export of the teacher profile screen.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 3 Fix the profile-tab redirect pattern - Why we did it...
+
+A redirect-style tab screen is tempting because it looks simple, but it weakens navigation behavior.
+
+When a tab silently calls `router.replace()`
+- tab history can become confusing
+- native back behavior can feel wrong
+- the user may leave the tab context unexpectedly
+- the flow becomes harder to reason about later
+
+By rendering the actual profile screen directly in the tab route, the app preserves the expected mobile mental model. Tapping the profile tab now opens the real profile screen as that tab’s content rather than jumping away through a hidden redirect.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 3 Fix the profile-tab redirect pattern - Why this matters...
+
+This was the most important correction in Feature 14.
+
+It did not create a flashy new screen, but it removed a navigation smell that would otherwise keep causing confusion later. In mobile apps, the invisible structure of navigation often matters more than one more visible UI improvement.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 4 Make teacher payment info reachable from the teacher flow - What we did...
+
+We confirmed that the teacher payment info screen already existed as a top-level pushed screen at
+- `app/profile/payment.tsx`
+
+We then made sure the teacher profile flow included an explicit navigation entry into that payment info screen by pushing to the existing route from the teacher profile UI.
+
+The screen remained a pushed stack screen outside the teacher tab group so native back behavior stayed clear and consistent.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 4 Make teacher payment info reachable from the teacher flow - Why we did it...
+
+A screen is not really part of the product flow if users cannot reach it clearly from the role area it belongs to.
+
+The payment info screen had already been built in Feature 13, but this feature made the route feel intentional within the teacher experience
+- teacher opens profile
+- teacher opens payment info
+- teacher returns using native back
+
+That is a better mobile flow than hiding the screen behind an unclear route or forcing it into the tab bar.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 4 Make teacher payment info reachable from the teacher flow - Why this matters...
+
+This also reinforced an architectural rule for the app
+- profile is a role destination
+- payment info is a pushed detail/edit screen
+
+That separation keeps the tab bar focused and avoids polluting visible top-level destinations with screens that belong deeper in a profile-management flow.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 5 Remove route registrations that no longer match the real file tree - What we did...
+
+While auditing the root stack in `app/_layout.tsx`, we found a stale registration for `teacher-course/index`.
+
+That route did not correspond to a real file in the current tree because the course list already lived at
+- `app/(teacher)/courses.tsx`
+
+We removed the ghost root-stack registration so the route configuration matched the actual app structure again.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 5 Remove route registrations that no longer match the real file tree - Why we did it...
+
+Stale route registrations are small but important cleanup items.
+
+They can
+- confuse future feature work
+- create false assumptions about the real route tree
+- make typed-route safety harder to trust
+- increase the chance of accidental duplication later
+
+Since Feature 14 was specifically about navigation cleanup, removing this mismatch was part of finishing the structure properly rather than just making the current screens feel acceptable.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 5 Remove route registrations that no longer match the real file tree - Engineering note...
+
+This was a good example of why route cleanup is not only about user-visible behavior.
+
+Sometimes the improvement is internal clarity
+- fewer ghost routes
+- cleaner root stack
+- better alignment between files and route registrations
+- lower risk when future route changes happen
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 6 Keep tab routes and pushed detail routes clearly separated - What we did...
+
+We preserved the existing good routing decisions already established in earlier features
+- student tabs remain top-level destinations
+- browse keeps its own nested stack
+- student course detail and watch remain outside the tab tree as pushed screens
+- teacher tabs remain top-level role destinations
+- teacher create/edit course and lesson-management screens remain outside the tab tree as pushed screens
+- payment info remains outside the tab tree as a pushed screen
+
+We did not collapse these flows back into tab groups just for convenience.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 6 Keep tab routes and pushed detail routes clearly separated - Why we did it...
+
+This separation is one of the most important mobile navigation rules in the app.
+
+Top-level tabs should answer
+- where am I in the app at a role level?
+
+Pushed screens should answer
+- what deeper task or detail am I working on right now?
+
+Mixing those responsibilities creates a messy app where
+- detail screens appear as tabs
+- back behavior feels inconsistent
+- users lose their sense of place
+
+By keeping the separation clear, Feature 14 protected the app from that drift.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 6 Keep tab routes and pushed detail routes clearly separated - Why this matters...
+
+This is especially useful before polish and APK prep.
+
+Once navigation architecture is stable, later UI polish can focus on appearance and state quality instead of repeatedly compensating for route mistakes.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 7 Add a development-only role switch helper for local testing - What we did...
+
+To make local navigation testing easier during the mock-data-first phase, we added a `__DEV__`-gated button on the student home screen that switches into the teacher area.
+
+This was intentionally treated as a development convenience only and not as a production navigation feature.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 7 Add a development-only role switch helper for local testing - Why we did it...
+
+Without authentication or real role resolution yet, testing both role flows repeatedly can become tedious.
+
+A small development-only role switcher reduces friction during local verification
+- student flow can be tested quickly
+- teacher flow can be re-entered quickly
+- route changes can be validated faster
+- the app can still remain mock-data-only
+
+This made the feature easier to verify without pretending that role switching is a finished product behavior.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 7 Add a development-only role switch helper for local testing - Risk control...
+
+The important control here is the `__DEV__` guard.
+
+That keeps the helper out of production behavior and preserves the project rule that temporary development affordances should not leak into shipping builds.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 8 Re-test the full student flow end to end - What we did...
+
+After the route cleanup, we re-tested the student flow
+- app open
+- student home
+- browse
+- academic year
+- subject
+- course detail
+- watch
+- back navigation through the stack
+- profile tab behavior
+
+We checked Arabic first in RTL, then rechecked the same flow in English.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 8 Re-test the full student flow end to end - Why we did it...
+
+Feature 14 was not complete just because the route files looked cleaner.
+
+The real goal was product coherence. That only becomes visible when the user actually walks the flow and sees whether
+- the right headers appear
+- the right back arrows appear
+- the tab bar stays clean
+- profile behaves like a real destination instead of a hidden redirect
+- language and RTL layout still hold up after the route changes
+
+So the flow had to be tested as a sequence, not only as isolated screens.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 8 Re-test the full student flow end to end - Result...
+
+The student flow now behaves more cleanly
+- the app still opens to the intended student entry point
+- browse flow remains coherent
+- course detail and watch keep native back behavior
+- profile opens directly as a tab screen rather than redirecting away from the tab context
+- Arabic and English both remain usable after the cleanup
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 9 Re-test the full teacher flow end to end - What we did...
+
+We also re-tested the teacher flow
+- teacher home
+- courses tab
+- create course
+- edit course
+- lessons
+- teacher profile
+- payment info
+- native back behavior through pushed screens
+
+Again, Arabic was checked first in RTL, then English was rechecked afterward.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 9 Re-test the full teacher flow end to end - Why we did it...
+
+The teacher area combines several navigation types
+- tab destinations
+- pushed CRUD-like screens
+- pushed payment details
+- role-specific profile behavior
+
+That makes it a strong test of whether the navigation architecture is actually coherent.
+
+If teacher flow works well, it is a good sign that the app is now separating
+- top-level destinations
+- management flows
+- profile/detail flows
+in a stable way.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 9 Re-test the full teacher flow end to end - Result...
+
+The teacher flow now behaves more intentionally
+- the courses tab remains a real tab destination
+- create/edit course and lesson flows keep correct native back behavior as pushed screens
+- teacher profile no longer relies on a redirect tab
+- payment info is reachable from the teacher profile flow
+- the tab bar remains limited to real top-level destinations
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 10 Re-run TypeScript after route cleanup - What we did...
+
+After the navigation changes, we ran TypeScript again to confirm that the route cleanup did not leave behind broken references.
+
+This included rechecking the route tree after removing the stale registration and after changing the profile-tab implementation pattern.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 10 Re-run TypeScript after route cleanup - Why we did it...
+
+Route work can look correct in the UI while still leaving technical inconsistencies
+- stale screen names
+- outdated typed-route assumptions
+- bad imports
+- route registrations that no longer match files
+
+Because this project depends on Expo Router and typed safety, re-running TypeScript was part of confirming that the cleanup was structurally sound, not just visually acceptable.
+
+--- TITLE Feature 14 Connect Navigation Flows - Step 10 Re-run TypeScript after route cleanup - Result...
+
+TypeScript still passed cleanly after the Feature 14 route cleanup.
+
+That was the final technical confirmation that the navigation improvements were aligned with the current app tree rather than being temporary runtime-only fixes.
+
+--- TITLE Feature 14 Connect Navigation Flows - Completion checklist for Feature 14...
+
+Feature 14 is complete when all of these are true
+- the app still opens to the intended student entry point
+- student home to browse to year to subject to course detail to watch works cleanly
+- student profile opens directly as a tab screen
+- teacher home to courses to create/edit course to lessons works cleanly
+- teacher profile opens directly as a tab screen
+- teacher payment info is reachable from the teacher profile flow
+- no unwanted screens appear as visible tabs
+- pushed screens show sensible native back behavior
+- Arabic works first in RTL
+- English still works after the cleanup
+- all current behavior remains mock-data-only
+- TypeScript passes cleanly after the route changes
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Problem 1 The profile tabs still used a redirect-style pattern...
+
+The student and teacher profile tabs were still implemented through `router.replace()` redirect screens.
+
+That meant the screen existed, but the navigation behavior was weaker than it should be for a real mobile tab destination.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Why this mattered...
+
+Redirect-style tab screens can create subtle but real UX problems
+- broken or confusing back behavior
+- unnecessary history replacement
+- harder reasoning about where the user actually is
+- more fragile future route cleanup
+
+This mattered because Feature 13 had already identified the issue and deferred it intentionally. So leaving it unfixed in Feature 14 would have meant the feature was incomplete.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Problem 2 A built screen existed but was not clearly reachable in the role flow...
+
+The teacher payment info screen had already been built, but it still needed a clean entry point from the teacher flow.
+
+Without that, the feature from the previous step existed technically but was not yet fully integrated into how the teacher actually moves through the app.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Why this mattered...
+
+This is a common app-navigation problem. A screen can be complete in isolation but still feel missing if it has no clear home in the user journey.
+
+For a teacher, payment info belongs near profile management, not in the tab bar and not as an obscure detached route.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Problem 3 The root stack still contained a stale route registration...
+
+The root layout still registered `teacher-course/index`, even though the actual course list already lived in the teacher tabs.
+
+That mismatch did not define the visible UX directly, but it made the route tree less trustworthy.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Why this mattered...
+
+Navigation cleanup is partly about internal clarity.
+
+If the route registration layer no longer matches the real file tree, future features become harder to implement confidently. That is especially risky in Expo Router projects where file structure and route identity are closely tied together.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Problem 4 Testing both role flows was awkward without backend auth...
+
+The app is still mock-data-only, so there is no finished role-selection or login system deciding whether the user is a student or teacher.
+
+That made repeated validation of both role flows slower during local development.
+
+--- TITLE Feature 14 Connect Navigation Flows - Problems encountered in Feature 14 - Why this mattered...
+
+Feature 14 was all about end-to-end flow checking. If moving between role areas is cumbersome during development, route verification becomes less reliable and slower.
+
+A small development-only role switch helper reduced that friction while keeping the app inside the mock-data-first phase.
+
+--- TITLE Feature 14 Connect Navigation Flows - How those problems were solved - Solution 1 Replace redirect-style profile tabs with direct screen re-exports...
+
+Instead of using `router.replace()` in the tab files, we changed the student and teacher profile tab routes to render the actual shared profile screens directly.
+
+This preserved tab context and removed the history-disrupting redirect pattern.
+
+--- TITLE Feature 14 Connect Navigation Flows - How those problems were solved - Solution 2 Push payment info from the teacher profile flow...
+
+We kept payment info as a pushed top-level screen and added a clear teacher-profile entry point into it.
+
+That maintained the clean separation between
+- role tabs as top-level destinations
+- payment as a deeper management screen
+
+--- TITLE Feature 14 Connect Navigation Flows - How those problems were solved - Solution 3 Remove stale route registrations from the root stack...
+
+We deleted the ghost `teacher-course/index` registration so the root stack matched the real file tree again.
+
+That reduced route confusion and improved structural clarity for future feature work.
+
+--- TITLE Feature 14 Connect Navigation Flows - How those problems were solved - Solution 4 Keep dev-only testing helpers behind `__DEV__`...
+
+To support local testing across role flows without inventing unfinished product behavior, we added a development-only role switch helper and kept it behind `__DEV__`.
+
+That made validation easier while respecting the rule that temporary testing utilities should not leak into production.
+
+--- TITLE Feature 14 Connect Navigation Flows - Lessons from Feature 14 - Lesson 1 A screen can be correct in code and still wrong in navigation...
+
+Feature 14 reinforced a core mobile lesson
+- route existence is not enough
+- screen ownership by the right navigator matters
+- back behavior is part of product quality
+
+The app already had most of the needed screens. The real work here was making them belong to the right navigation layers.
+
+--- TITLE Feature 14 Connect Navigation Flows - Lessons from Feature 14 - Lesson 2 Redirect-style tab screens are usually a smell...
+
+A redirect can be acceptable in some startup or guard flows, but for a core tab destination it usually signals that the route structure itself needs another look.
+
+The direct re-export pattern turned out to be much cleaner for this app’s role-specific profile tabs.
+
+--- TITLE Feature 14 Connect Navigation Flows - Lessons from Feature 14 - Lesson 3 Top-level destinations and pushed task screens should stay intentionally separated...
+
+This feature confirmed that the app’s navigation is stronger when
+- tabs answer where the user is at a high level
+- pushed screens answer what specific task the user is doing now
+
+That distinction makes both student and teacher flows easier to understand and easier to extend later.
+
+--- TITLE Feature 14 Connect Navigation Flows - Lessons from Feature 14 - Lesson 4 Navigation cleanup before polish is the right order...
+
+It is better to clean route structure before doing final UI polish.
+
+Once navigation is coherent
+- screen transitions feel more intentional
+- profile/payment flows are easier to test
+- empty/error-state polish can be reviewed in realistic app journeys
+- APK preparation becomes less risky
+
+That makes Feature 15 a better next step than trying to polish screens on top of shaky route behavior.
+
+--- TITLE Feature 14 Connect Navigation Flows - Official references used during this feature...
+
+- Expo Router route groups https://docs.expo.dev/router/advanced/route-groups/
+- Expo Router layouts and nested navigation https://docs.expo.dev/router/layouts/
+- Expo Router navigation basics and moving between routes https://docs.expo.dev/router/navigating-pages/
+- Expo Router tabs https://docs.expo.dev/router/advanced/tabs/
+- Expo Router stack navigator https://docs.expo.dev/router/advanced/stack/
+- React Native KeyboardAvoidingView https://reactnative.dev/docs/keyboardavoidingview
+- React Native ScrollView https://reactnative.dev/docs/scrollview

@@ -1,10 +1,3 @@
 // app/(teacher)/profile.tsx
-import { useEffect } from "react";
-import { router } from "expo-router";
-
-export default function TeacherProfileRedirect() {
-  useEffect(() => {
-    router.replace("/profile/teacher");
-  }, []);
-  return null;
-}
+// Renders the teacher profile screen directly inside the teacher tab.
+export { default } from "../profile/teacher";

@@ -8,6 +8,7 @@ import {
   LoadingScreen,
   PrimaryButton,
   ScreenContainer,
+  SecondaryButton,
 } from "../../components/ui";
 import { Spacing } from "../../constants/design";
 import { t } from "../../lib/i18n";
@@ -54,6 +55,12 @@ export default function StudentHomeScreen() {
 
   return (
     <ScreenContainer>
+      {__DEV__ && (
+        <SecondaryButton
+          label="[DEV] Teacher View"
+          onPress={() => router.replace("/(teacher)/dashboard")}
+        />
+      )}
       <ScrollView
         className="flex-1 bg-background"
         contentContainerStyle={{

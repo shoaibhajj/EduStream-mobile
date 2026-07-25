@@ -1,10 +1,4 @@
 // app/(student)/profile.tsx
-import { useEffect } from "react";
-import { router } from "expo-router";
-
-export default function StudentProfileRedirect() {
-  useEffect(() => {
-    router.replace("/profile/student");
-  }, []);
-  return null;
-}
+// Renders the student profile screen directly inside the student tab.
+// This replaces the broken router.replace() redirect so back navigation works correctly.
+export { default } from "../profile/student";
