@@ -1,4 +1,3 @@
-// app/(student)/[yearId]/index.tsx
 import { useEffect, useState } from "react";
 import {
   View,
@@ -10,6 +9,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { Subject } from "../../../lib/types";
 import { getSubjectsByYear } from "../../../lib/mock-data/student";
+import { t } from "../../../lib/i18n";
 
 export default function SubjectsScreen() {
   const { yearId } = useLocalSearchParams<{ yearId: string }>();
@@ -24,7 +24,7 @@ export default function SubjectsScreen() {
         const data = await getSubjectsByYear(yearId);
         setSubjects(data);
       } catch (e) {
-        setError("Could not load subjects.");
+        setError(t("student.error_load_subjects"));
         console.error("[student/[yearId]] failed to load subjects", e);
       } finally {
         setLoading(false);
@@ -51,7 +51,7 @@ export default function SubjectsScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-background px-6">
         <Text className="text-base font-semibold text-text-secondary">
-          No subjects found for this year.
+          {t("student.no_subjects")}
         </Text>
       </View>
     );
@@ -71,7 +71,7 @@ export default function SubjectsScreen() {
               {item.name}
             </Text>
             <Text className="text-xs text-text-muted mt-1">
-              {item.courseCount} courses
+              {item.courseCount} {t("student.course_count")}
             </Text>
           </TouchableOpacity>
         )}

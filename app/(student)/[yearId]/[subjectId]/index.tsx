@@ -1,4 +1,3 @@
-// app/(student)/[yearId]/[subjectId]/index.tsx
 import { useEffect, useState } from "react";
 import {
   View,
@@ -10,6 +9,7 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import type { Course } from "../../../../lib/types";
 import { getCoursesBySubject } from "../../../../lib/mock-data/student";
+import { t } from "../../../../lib/i18n";
 
 export default function CoursesScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -23,7 +23,7 @@ export default function CoursesScreen() {
         const data = await getCoursesBySubject(subjectId);
         setCourses(data);
       } catch (e) {
-        setError("Could not load courses.");
+        setError(t("student.error_load_courses"));
         console.error(
           "[student/[yearId]/[subjectId]] failed to load courses",
           e
@@ -53,7 +53,7 @@ export default function CoursesScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-background px-6">
         <Text className="text-base font-semibold text-text-secondary">
-          No courses available for this subject.
+          {t("student.no_courses")}
         </Text>
       </View>
     );
@@ -73,7 +73,7 @@ export default function CoursesScreen() {
               {item.isFree && (
                 <View className="bg-accent-light rounded-full px-2 py-0.5">
                   <Text className="text-xs text-accent font-medium">
-                    Preview
+                    {t("student.badge_preview")}
                   </Text>
                 </View>
               )}
@@ -83,10 +83,10 @@ export default function CoursesScreen() {
             </Text>
             <View className="flex-row justify-between items-center mt-2">
               <Text className="text-xs text-text-muted">
-                {item.lessonCount} lessons
+                {item.lessonCount} {t("student.lesson_count")}
               </Text>
               <Text className="text-lg font-bold text-accent">
-                {item.price.toLocaleString()} SYP
+                {item.price.toLocaleString()} {t("student.price_suffix")}
               </Text>
             </View>
           </TouchableOpacity>

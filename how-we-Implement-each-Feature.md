@@ -1660,3 +1660,796 @@ These are the two most important references for this feature:
 - Expo Babel docs: [https://docs.expo.dev/versions/latest/config/babel/](https://docs.expo.dev/versions/latest/config/babel/) [web:41]
 
 One important caution: because NativeWind examples online vary by version, always prefer the official install guide over third-party snippets when updating this setup.[web:10]
+
+
+
+------
+
+# Feature 04 — Add Arabic-First Localization Foundation
+
+## What this feature does
+
+This feature adds the first real localization foundation to the EduStream mobile app.
+
+It does **not** add backend localization, server-driven translation, or user profile language sync.
+
+Instead, it prepares the app to:
+- launch in Arabic by default
+- support English as a secondary language
+- render the UI with RTL awareness
+- move visible UI strings out of screen files and into translation files
+- keep the project ready for future screens without repeating hardcoded text
+
+This feature was inserted into the plan before the old Feature 04, so from this point forward the remaining feature numbers shift by +1.
+
+The final success condition for this feature is:
+- Arabic is the default app language
+- the student browse flow renders in Arabic first
+- the app is prepared for RTL layout behavior
+- translation files exist for Arabic and English
+- the previously built student screens no longer use hardcoded visible English strings
+- the project now has a reusable translation foundation for future screens
+
+---
+
+## Why this feature matters
+
+Localization is not just about translating text.
+
+In a mobile app, localization also affects:
+- layout direction
+- spacing assumptions
+- number formatting
+- screen titles
+- future maintainability
+
+If localization is delayed too long, later screens become more expensive to fix because hardcoded strings spread across the codebase.
+
+That is especially risky for Arabic-first apps because Arabic introduces RTL behavior, which changes how mobile layouts behave. React Native provides built-in RTL support through `I18nManager`, and Expo’s official localization guide shows using `expo-localization` together with `i18n-js` as a straightforward app-level translation setup.[web:17][web:18]
+
+For this project, localization had to happen **before** building more screens, because the app is Arabic-first by product direction, not English-first with Arabic added later.
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the project docs from the real repo
+2. use the current official Expo localization guidance
+3. install only the localization packages needed now
+4. create translation files for Arabic and English
+5. make Arabic the app default
+6. enable RTL-aware app behavior
+7. replace hardcoded visible strings in the student flow
+8. add a temporary language switch method for testing if needed
+9. verify the student browse flow works in Arabic first
+
+An important project constraint remained active here:
+- still mock-data-first
+- no Supabase yet
+- no Clerk yet
+
+So this feature had to focus purely on client-side localization and UI behavior.
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before writing any localization code, we re-read the latest versions of:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+### Why we did it
+
+This confirmed the current source of truth for the mobile app.
+
+That mattered because:
+- the feature numbering had changed
+- the project was still mock-data-first
+- the architecture and build plan had to stay aligned
+- we needed to avoid introducing backend assumptions too early
+
+### Engineering note
+
+This is an important discipline in repo-driven implementation:
+do not rely on memory for project state.
+
+Re-reading the docs before implementation reduces drift between:
+- actual code
+- project plan
+- feature numbering
+- architecture decisions
+
+---
+
+## Step 2 — Choose the localization approach based on official Expo guidance
+
+### What we did
+
+We chose the setup pattern described in Expo’s official localization guide:
+- `expo-localization` for locale-related information
+- `i18n-js` for translation management[web:17]
+
+### Why we did it
+
+Expo explicitly documents using `expo-localization` and uses `i18n-js` as the example translation library in its guide.[web:17]
+
+That made it the correct foundation for this project because:
+- it is simple
+- it fits Expo well
+- it avoids unnecessary abstraction too early
+- it is easy to extend later
+- it keeps future migration flexible
+
+### Why this matters
+
+This was the right level of architecture for the current phase.
+
+The app still uses mock/static data only.
+So this feature needed:
+- local translation files
+- local locale selection logic
+- no remote translation loading
+- no account-based language persistence yet
+
+### React vs React Native note
+
+For a Next.js engineer, this is different from web i18n frameworks that often integrate with:
+- route prefixes
+- middleware
+- server rendering
+- locale-based URL segments
+
+In this React Native app:
+- there is no browser URL locale strategy
+- there is no server-rendered translation layer
+- localization happens inside the app runtime itself
+
+So the mobile mental model is:
+**translation state lives inside the app runtime, not in URL routing or server rendering**.
+
+---
+
+## Step 3 — Install the localization packages
+
+### What we did
+
+We installed:
+
+```bash
+npx expo install expo-localization
+npm install i18n-js
+npm install --save-dev @types/i18n-js
+```
+
+### Why we did it
+
+- `expo-localization` gives access to locale-related device information in Expo apps.[web:17]
+- `i18n-js` gives a small translation dictionary system that works well for local app strings.[web:17]
+
+### Why we used `npx expo install`
+
+We used `npx expo install` for the Expo package because Expo aligns installed package versions with the current SDK version.[web:17]
+
+That matters more in Expo than in many web projects, because package compatibility can affect app runtime behavior more directly.
+
+### React vs React Native note
+
+For a React/Next.js engineer, package installation feels familiar.
+
+The difference is:
+in Expo, version alignment is more important because dependencies may be tied to the Expo SDK and native runtime expectations.
+
+So in Expo projects:
+- prefer `npx expo install` for Expo-managed packages
+- use `npm install` for regular JavaScript packages unless Expo says otherwise
+
+---
+
+## Step 4 — Create the translation file structure
+
+### What we did
+
+We created this structure:
+
+```bash
+mkdir -p lib/i18n
+touch lib/i18n/ar.ts
+touch lib/i18n/en.ts
+touch lib/i18n/index.ts
+```
+
+### Why we did it
+
+We wanted a clean, scalable translation structure:
+- one file per language
+- one index file for setup
+- a reusable `t()` helper for screens
+
+This keeps localization concerns out of route components as much as possible.
+
+### Why this matters
+
+If translation dictionaries are scattered through screen files:
+- reuse becomes harder
+- maintenance becomes messy
+- missing keys become harder to track
+- future features become slower to implement
+
+By centralizing language content under `lib/i18n`, we created a stable app-level localization layer.
+
+### Engineering note
+
+This is similar to how a web engineer might create:
+- `locales/ar.json`
+- `locales/en.json`
+- a shared i18n setup file
+
+The difference in this project is that we used TypeScript files instead of JSON so the setup stays close to the app runtime and can evolve with helper logic more easily.
+
+---
+
+## Step 5 — Add Arabic and English translation dictionaries
+
+### What we did
+
+We created language objects for:
+- Arabic
+- English
+
+The Arabic file became the primary source for visible UI text in the current phase.
+
+We added keys for the existing student browse flow, including:
+- academic years
+- subjects
+- courses
+- loading and error messages
+- empty states
+- preview badge
+- lesson count labels
+- price suffix
+
+### Why we did it
+
+The existing student screens already had visible text such as:
+- error messages
+- empty states
+- item labels
+- badge text
+
+Those strings needed to move into translation files so the app could:
+- launch in Arabic first
+- switch to English if needed for testing
+- stop depending on hardcoded English text in screen code
+
+### Why this matters
+
+This is the real beginning of localization.
+
+Installing packages alone does not localize anything.
+The actual localization value appears only when visible UI text is moved into translation keys.
+
+### Engineering note
+
+A useful rule from this point onward is:
+
+**all visible UI strings must come from translation keys**
+
+That means future screens should not introduce raw text such as:
+
+```tsx
+<Text>Courses</Text>
+```
+
+They should instead use something like:
+
+```tsx
+<Text>{t("student.courses_title")}</Text>
+```
+
+This rule is especially important in Arabic-first apps because later conversion is painful if hardcoded English spreads through the codebase.
+
+---
+
+## Step 6 — Build the `i18n` setup layer
+
+### What we did
+
+Inside `lib/i18n/index.ts`, we:
+- created an `I18n` instance
+- registered the `ar` and `en` dictionaries
+- set Arabic as the default language
+- enabled fallback behavior
+- exported a reusable `t()` helper
+- exported a small language-switch helper for testing
+
+### Why we did it
+
+This file became the central translation engine for the app.
+
+Its job is:
+- hold the active locale
+- resolve keys
+- provide one import path for screens
+- keep screen code simple
+
+### Why Arabic was hardcoded as default
+
+Even though `expo-localization` can read device locale information, we intentionally set Arabic as the default language for this stage.[web:17]
+
+That was the correct decision because the product requirement for this feature was:
+- Arabic must be the primary/default language
+- English is secondary
+- later settings can decide if device-based selection should be allowed
+
+So at this stage, language choice is a **product rule**, not a device rule.
+
+### React vs React Native note
+
+In Next.js, locale often comes from:
+- URL segments
+- cookies
+- middleware
+- request headers
+
+In this Expo app, locale is currently set directly in runtime code.
+
+That means the mobile app is behaving more like a client-side stateful application than a server-routed locale-aware web app.
+
+---
+
+## Step 7 — Enable RTL layout behavior with `I18nManager`
+
+### What we did
+
+We enabled RTL support using React Native’s `I18nManager` API and triggered it early during app startup.[web:18]
+
+The setup used:
+- `I18nManager.forceRTL(true)` for Arabic
+- root-level initialization from the app startup path
+
+### Why we did it
+
+Arabic is an RTL language.
+That means localization is not complete if only text changes but layout direction stays LTR.
+
+React Native documents `I18nManager` as the module used to control RTL layout behavior and check whether the app is currently in RTL mode.[web:18]
+
+### Why this matters
+
+Without RTL handling:
+- text may appear Arabic, but layout still behaves like English
+- spacing may feel wrong
+- row alignment may look unnatural
+- future screen polish becomes harder
+
+Arabic-first means:
+- translated text
+- correct direction behavior
+- fewer left/right assumptions in UI implementation
+
+### Important runtime behavior
+
+React Native’s RTL changes through `I18nManager.forceRTL()` do not always apply instantly.
+A full app restart is often required for the layout direction change to fully take effect, especially on Android.[web:18]
+
+This is normal platform behavior, not a bug.
+
+### React vs React Native note
+
+This is a major difference from web development.
+
+In web React or Next.js, switching RTL may involve:
+- `dir="rtl"` on HTML
+- CSS logical properties
+- instant browser reflow
+
+In React Native:
+- there is no DOM
+- layout direction is handled by the native layout system
+- forcing RTL can require restart behavior
+
+So the React Native app runtime has stronger control over directionality than the browser model.
+
+---
+
+## Step 8 — Initialize localization from the root app layout
+
+### What we did
+
+We imported the i18n setup from `app/_layout.tsx`, so localization and RTL initialization happen at the app startup path.
+
+### Why we did it
+
+This is the earliest stable point in the route-based app where shared initialization belongs.
+
+It ensured:
+- the app starts with the correct locale logic
+- RTL setup runs before screens are rendered
+- all route screens share the same translation context
+
+### Why this matters
+
+If localization is initialized too late:
+- some screens may render before translation state is ready
+- RTL setup may be inconsistent
+- startup behavior becomes harder to reason about
+
+### React vs React Native note
+
+For a Next.js engineer, this feels somewhat similar to putting global app setup in:
+- `app/layout.tsx`
+or
+- `_app.tsx`
+
+That analogy is useful.
+
+The difference is that in this mobile app, the root layout is also the right place to trigger app-wide runtime setup like localization and direction handling.
+
+---
+
+## Step 9 — Replace hardcoded strings in the existing student screens
+
+### What we did
+
+We updated the existing student browse screens:
+- Academic Years
+- Subjects
+- Courses
+
+We replaced hardcoded visible strings such as:
+- error messages
+- empty states
+- count labels
+- preview badge text
+- lesson labels
+- price suffix text
+
+with translation keys through `t()`.
+
+### Why we did it
+
+This was required to make the feature real.
+
+If localization files exist but existing screens still contain visible English strings, the app is not truly localized.
+
+### Why this matters
+
+This step converted localization from “infrastructure” into “visible behavior.”
+
+It also established a project rule for future work:
+new screens should start with translation keys from day one.
+
+### Important implementation detail
+
+The data itself, such as:
+- year names
+- subject names
+- course titles
+- teacher names
+
+can remain mock data for now.
+
+The localization feature only required visible app-controlled UI strings to move into translation files.
+
+That distinction is important.
+
+We localized:
+- interface language
+
+We did **not** yet localize:
+- all mock content records
+- backend content
+- database-driven curriculum text
+
+---
+
+## Step 10 — Add a simple language switch path for testing
+
+### What we did
+
+We prepared a minimal language switch helper so Arabic and English could both be tested during development.
+
+### Why we did it
+
+Even though Arabic is the required default, a temporary switch path is useful to confirm:
+- keys exist in both languages
+- fallback behavior works
+- screens do not break when language changes
+
+### Why this matters
+
+Testing both languages early helps catch:
+- missing translation keys
+- untranslated strings
+- UI width issues
+- assumptions hidden in the screen code
+
+### Engineering note
+
+This switch mechanism is mainly a **development testing tool** at this stage.
+
+It does not yet represent the final user-facing language settings feature.
+
+---
+
+## Step 11 — Handle Arabic number formatting for prices
+
+### What we did
+
+We updated price formatting in the Courses screen to use:
+
+```ts
+toLocaleString("ar-SA")
+```
+
+for Arabic-style numeric formatting.
+
+### Why we did it
+
+Localization is not only about text labels.
+It also includes how users read numbers.
+
+Using locale-aware number formatting makes the Arabic-first experience feel more native and intentional.
+
+### Why this matters
+
+Without localized formatting:
+- labels may be Arabic
+- but numeric presentation may still feel foreign or inconsistent
+
+That reduces the quality of the Arabic-first experience.
+
+### React vs React Native note
+
+This is conceptually the same as locale-aware formatting on the web, but in a mobile app it is often more noticeable because screen density is tighter and users scan UI labels and numbers very quickly.
+
+---
+
+## Step 12 — Verify the student browse flow in Arabic first
+
+### What we did
+
+We verified the existing student flow still worked after localization changes:
+- Academic Years screen
+- Subjects screen
+- Courses screen
+- related labels and headings already built
+
+We also checked:
+- Arabic appears first by default
+- visible text no longer depends on hardcoded English strings
+- the app remains stable after the RTL setup
+
+### Why we did it
+
+This turned the feature from configuration work into a complete implementation.
+
+### Why this matters
+
+A localization feature is not complete when translation files merely exist.
+
+It is complete when:
+- the app launches in the correct language
+- the user can navigate existing screens
+- visible text actually comes from translation keys
+- RTL does not break previously working screens
+
+---
+
+## Problems encountered in Feature 04
+
+### Problem 1 — Choosing between device locale and product-default locale
+
+`expo-localization` can expose device locale information, which could lead to device-driven language selection.[web:17]
+
+But this feature required Arabic to be the default language regardless of device settings.
+
+### Why this was a real design decision
+
+This was not a technical limitation.
+It was a product decision.
+
+The app is Arabic-first, so product rules had to override automatic device preference behavior for now.
+
+### Problem 2 — RTL is not just “translated text”
+
+A common mistake is thinking localization is done once strings are translated.
+
+But Arabic also changes directional layout expectations, and React Native handles this through RTL-aware layout behavior and `I18nManager` rather than DOM direction attributes.[web:18]
+
+### Problem 3 — Existing screens already had visible hardcoded strings
+
+The student browse flow was built before localization.
+That meant strings had to be migrated after the fact.
+
+This is always more expensive than starting with translation keys from the beginning.
+
+### Problem 4 — Web instincts can create left/right assumptions
+
+A React/Next.js engineer often writes spacing and alignment with a left-to-right default in mind.
+
+That becomes risky in Arabic-first mobile UI.
+
+Examples of risky assumptions include:
+- `marginLeft`
+- `paddingRight`
+- fixed left alignment assumptions in row layouts
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Treat Arabic as a product-default locale
+
+We intentionally hardcoded Arabic as the initial app language instead of deriving it from device locale.
+
+That satisfied the current product rule cleanly.
+
+### Solution 2 — Enable RTL at app startup
+
+We used `I18nManager` from the root startup path so RTL handling becomes part of app initialization rather than a late screen-level concern.[web:18]
+
+### Solution 3 — Move UI strings into translation files immediately
+
+Instead of postponing the migration, we replaced visible strings in the already-built student flow now.
+
+That prevents future localization debt.
+
+### Solution 4 — Establish a new coding rule for future screens
+
+From Feature 04 onward:
+- visible text must use translation keys
+- directional styles should avoid hardcoded left/right assumptions when possible
+- future screens should be Arabic-ready from the first implementation
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — Mobile localization is not route localization
+
+A Next.js engineer often thinks about localization in terms of:
+- routes
+- middleware
+- locale segments
+- SSR content
+
+In React Native with Expo, localization is primarily:
+- app runtime configuration
+- translation dictionaries
+- direction-aware layout behavior
+
+That is a different mental model.
+
+## Lesson 2 — RTL on mobile is more runtime-oriented than on the web
+
+On the web, adding `dir="rtl"` can change layout direction immediately.
+
+In React Native, direction handling belongs to the native layout environment and is controlled through `I18nManager`, which may require a restart for full effect.[web:18]
+
+That is a very important practical difference.
+
+## Lesson 3 — Translation keys are a scalability decision, not just a localization decision
+
+A screen with hardcoded strings is faster to write once, but slower to maintain forever.
+
+Translation keys make future work easier:
+- English testing
+- Arabic consistency
+- future settings screen
+- future content expansion
+
+This is true on web too, but it becomes more critical in Arabic-first mobile apps because layout and string length change together.
+
+## Lesson 4 — Product-default language can intentionally override device locale
+
+A web engineer may assume “respect the browser locale” by default.
+
+But in app product design, sometimes the correct choice is:
+- the product launches in one language first
+- device locale support comes later
+
+This feature followed that pattern intentionally.
+
+---
+
+## Discussion notes for Feature 04
+
+### Why did we implement localization now instead of later?
+
+Because the app had already started building real screens.
+
+If more screens were added first, localization work would spread across more files and cost more to retrofit.
+
+Doing it now kept the codebase cleaner.
+
+### Why use `i18n-js` instead of a larger i18n framework?
+
+Because the project needed:
+- a simple Expo-compatible setup
+- quick translation dictionaries
+- local runtime control
+- no unnecessary complexity yet
+
+Expo’s guide explicitly demonstrates using `i18n-js` together with `expo-localization`, which made it a good fit for this phase.[web:17]
+
+### Why force Arabic instead of reading device language?
+
+Because this feature’s requirement was product-driven:
+Arabic must be the primary/default language.
+
+So device locale support was intentionally not the main decision-maker yet.
+
+### What is the main React Native lesson here?
+
+Localization in mobile is a combination of:
+- text translation
+- startup configuration
+- layout direction
+- testing behavior
+- future screen discipline
+
+So this feature is not “just dictionaries.”
+It is part of app architecture.
+
+---
+
+## Final output of Feature 04
+
+At the end of this feature, the project had:
+- `expo-localization` installed[web:17]
+- `i18n-js` installed[web:17]
+- Arabic translation file created
+- English translation file created
+- centralized `lib/i18n` setup
+- Arabic set as the default app language
+- RTL initialization through `I18nManager`[web:18]
+- root-layout localization startup wiring
+- student browse screens migrated away from hardcoded visible English strings
+- a temporary path for language testing
+- an Arabic-first foundation for all future UI features
+
+---
+
+## Completion checklist for Feature 04
+
+Feature 04 is complete when all of these are true:
+
+- `expo-localization` is installed and available.[web:17]
+- `i18n-js` is installed and used for app translations.[web:17]
+- `lib/i18n/ar.ts` exists
+- `lib/i18n/en.ts` exists
+- `lib/i18n/index.ts` exists
+- Arabic is the default language
+- English exists as a secondary language
+- RTL support is enabled through React Native localization direction handling.[web:18]
+- localization setup is initialized from app startup
+- Academic Years screen uses translation keys
+- Subjects screen uses translation keys
+- Courses screen uses translation keys
+- visible hardcoded English strings are removed from those screens
+- Arabic is shown first when the app launches
+- the student browse flow still works after localization changes
+- the project is ready for future screens to use translation keys by default
+
+---
+
+## Official references
+
+These are the most important references for this feature:
+
+- Expo localization guide: [https://docs.expo.dev/guides/localization/](https://docs.expo.dev/guides/localization/) [web:17]
+- React Native `I18nManager` docs: [https://reactnative.dev/docs/i18nmanager](https://reactnative.dev/docs/i18nmanager) [web:18]
+
+One important caution:
+for Arabic-first support, translating strings is only part of the work.
+RTL behavior must also be considered from the start, especially when building future layouts with directional spacing and alignment assumptions.[web:18]
