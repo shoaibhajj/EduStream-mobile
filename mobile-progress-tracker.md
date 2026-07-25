@@ -1,21 +1,21 @@
 # EduStream Mobile — Progress Tracker
 
 ## Current Status
-Feature 01 complete — Expo project is now running successfully with Expo Router on web and Android Expo Go.
+Feature 02 complete — core UI dependencies and base folder structure are now set up successfully, and the app still runs correctly with Expo Router and NativeWind.
 
 ## Next Up
-Feature 02 — Install Core Dependencies
+Feature 03 — Set Up Project Structure
 
 ## Build Progress
 
 ### Completed
 - 01 — Create Expo Project
+- 02 — Install Core Dependencies
 
 ### In Progress
 - None
 
 ### Not Started
-- 02 — Install Core Dependencies
 - 03 — Set Up Project Structure
 - 04 — Build Shared Design Foundations
 - 05 — Create Mock Data Layer
@@ -31,17 +31,24 @@ Feature 02 — Install Core Dependencies
 - 15 — Backend Phase (deferred for now per mock-data-first plan)
 
 ## Session Notes
-- Started Feature 01 by creating an Expo + TypeScript app and manually wiring Expo Router.
-- Initial repo app worked on web but failed on Android Expo Go due to runtime issues during the manual setup attempt.
-- Created a fresh official Expo Router starter project and verified it worked on mobile.
-- Replaced the broken repo app runtime files with the working fresh template baseline.
-- Verified the main `EduStream-mobile` repo now runs on web and Android Expo Go successfully.
+- Confirmed Feature 01 baseline remained stable before continuing.
+- Installed NativeWind and its required setup for the Expo project.
+- Added Tailwind/NativeWind configuration and verified the app builds successfully.
+- Fixed the initial Babel configuration mistake by aligning the setup with the NativeWind v4 installation flow.
+- Confirmed all local checks passed:
+  - Metro starts without errors
+  - NativeWind `className` renders correctly
+  - No TypeScript errors
+  - Folder structure matches the expected layout
+- Continued to defer Clerk and Supabase packages as part of the mock-data-first approach.
 
 ## Architecture Decisions
-- Adopted the working official Expo Router starter structure as the baseline project setup for the repo.
-- Kept routing file-based through the `app/` directory, with `_layout.tsx` as the root layout and `index.tsx` as the initial route.
-- Continued with the UI-first / mock-data-first plan; backend setup remains intentionally deferred.
+- Keep the project UI-first and mock-data-first until the dedicated backend phase.
+- Use NativeWind as the styling system with shared design tokens defined through Tailwind config.
+- Keep Expo Router file-based routing as the app navigation foundation.
+- Do not install Clerk or Supabase during Feature 02, even though the original architecture/build docs include them, because backend integration is intentionally postponed.
 
 ## Notes / Risks
-- The original manual Expo Router setup caused Android runtime instability in Expo Go, so the fresh template baseline is the approved starting point.
-- Future steps should build on the current working baseline only, without reintroducing custom setup changes outside the documented plan.
+- NativeWind v4 configuration must follow the current installation flow exactly; older Babel examples can break Metro bundling.
+- Backend-related setup remains intentionally excluded for now, so any auth or remote data files should wait until the backend phase.
+- Future steps should build on the now-working NativeWind + Expo Router baseline without reintroducing outdated config patterns.

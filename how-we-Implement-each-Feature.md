@@ -798,3 +798,865 @@ What the feature produced.
 
 ## Completion checklist
 How we know the feature is really done.
+
+---
+
+# Feature 02 — Install Core Dependencies
+
+## What this feature does
+
+This feature prepares the project for real UI work.
+
+It installs and configures the first layer of mobile dependencies needed for:
+- styling with NativeWind
+- route-based screen development with Expo Router
+- a predictable folder structure for the app codebase
+
+Because the project is following a **mock-data-first** plan, this feature intentionally skips backend-related packages for now:
+- no Clerk yet
+- no Supabase yet
+
+The final success condition for this feature is:
+- Metro starts without errors
+- NativeWind `className` styling renders correctly
+- TypeScript passes without errors
+- the agreed folder structure exists
+- the project stays compatible with the current Expo baseline
+
+---
+
+## Why this feature matters
+
+In a web React or Next.js app, styling setup is usually just a matter of:
+- installing a package
+- updating config
+- restarting the dev server
+
+In React Native with Expo, styling touches more layers:
+- Babel
+- Metro
+- CSS entry handling
+- route entry files
+- TypeScript environment typing
+
+That means this feature is not “just install Tailwind.”
+It is really:
+- installing NativeWind
+- telling Expo how to transform style-aware JSX
+- telling Metro how to process the CSS input file
+- making sure the route-based app startup can see that styling setup
+
+If this feature is done incorrectly, the project may fail in one of two ways:
+- Metro fails to bundle
+- the app runs, but `className` styles do nothing
+
+So this feature creates the first real React Native styling pipeline.
+
+---
+
+## Original implementation plan
+
+The original build plan said Feature 02 should install:
+- Clerk
+- Supabase
+- NativeWind
+- video packages
+- secure storage
+
+and use `npx expo install` where required.
+
+However, the active project plan changed to **mock-data-first**, and backend work is deferred for now.
+
+So for the real implementation of Feature 02, the plan became:
+
+1. Read the architecture and UI docs again
+2. Install only what is needed for UI styling now
+3. Skip Clerk and Supabase for this phase
+4. Configure NativeWind correctly for the current version
+5. Create the base folder structure
+6. Verify the app still runs cleanly
+
+This is an important engineering adjustment.
+We followed the project intent, not just the original static checklist.
+
+---
+
+## Step 1 — Re-read the implementation docs before touching the code
+
+### What we did
+
+Before changing anything, we re-read:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+
+### Why we did it
+
+This prevented a common mistake:
+assuming we remembered the architecture correctly from an earlier session.
+
+The docs confirmed:
+- Expo Router stays the navigation foundation
+- NativeWind is the styling system
+- folders must follow the documented architecture
+- backend work is deferred for now in practice
+
+### Engineering note
+
+This is one of the healthiest habits in repo-driven work:
+**re-read the source of truth before implementing the next feature**.
+
+In a real team, this reduces drift between:
+- architecture documents
+- build plans
+- actual code
+
+---
+
+## Step 2 — Decide what not to install yet
+
+### What we did
+
+We intentionally did **not** install:
+- `@clerk/clerk-expo`
+- `@supabase/supabase-js`
+- `expo-secure-store`
+- `expo-av`
+- `react-native-webview`
+
+### Why we did it
+
+The original architecture and build plan include auth, database, video, and secure storage as part of the full app stack.
+
+But the project is currently following a **UI-first / mock-data-first** approach, and the backend phase is deferred.
+
+So the right engineering move was:
+- install only what is required for current UI work
+- defer backend and media packages to later phases
+
+### Why this matters
+
+This keeps the project smaller and cleaner during the early UI phase.
+
+For a React/Next.js engineer, this is similar to not installing:
+- auth SDKs
+- API clients
+- upload packages
+
+before the screens and navigation shell actually exist
+
+The difference in mobile is that every package decision can affect:
+- bundling
+- Expo compatibility
+- native dependency alignment
+
+So being selective matters even more here.
+
+---
+
+## Step 3 — Install NativeWind and its required dependencies
+
+### What we did
+
+We installed the styling-related packages:
+
+```bash
+npm install nativewind@^4.1.23
+npm install --save-dev tailwindcss@^3.4.0
+npx expo install react-native-css-interop
+```
+
+### Why we did it
+
+NativeWind is the library that brings Tailwind-style utility classes to React Native components.[web:10]
+
+The official NativeWind installation guide says to install:
+- `nativewind`
+- `tailwindcss`
+
+and then continue with Babel setup, Metro config, CSS file setup, CSS import, and TypeScript type setup.[web:10]
+
+### Important note
+
+This was the first place where version awareness really mattered.
+
+Older blog posts and examples often show a different setup pattern.
+NativeWind v4 has a specific install flow, and mixing old examples with the current version can break the build.[web:10]
+
+### React vs React Native note
+
+In Next.js, Tailwind usually feels like:
+- install package
+- add content globs
+- import CSS
+- done
+
+In Expo + React Native, Tailwind-style support is not native to the runtime.
+NativeWind builds a bridge between:
+- utility-class authoring
+- React Native style objects
+- the Metro bundling process
+
+So the setup is more infrastructure-heavy than on the web.
+
+---
+
+## Step 4 — Create `tailwind.config.js`
+
+### What we did
+
+We created a project-level Tailwind config:
+
+```js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+  ],
+  presets: [require("nativewind/preset")],
+  theme: {
+    extend: {
+      colors: {
+        background: "#F6F7FB",
+        surface: "#FFFFFF",
+        "surface-secondary": "#F9FAFB",
+        border: "#E7EAF3",
+        "text-primary": "#101828",
+        "text-secondary": "#6A7282",
+        "text-muted": "#99A1AF",
+        accent: "#7C5CFC",
+        "accent-light": "#F3E8FF",
+        success: "#10B981",
+        "success-light": "#D0FAE5",
+        warning: "#FF8904",
+        error: "#EF4444",
+        locked: "#99A1AF",
+      },
+    },
+  },
+  plugins: [],
+};
+```
+
+### Why we did it
+
+The NativeWind docs say to create `tailwind.config.js`, include the paths to the component files, and add the NativeWind preset.[web:10]
+
+We also needed the app’s design tokens from the UI context doc, which says to use NativeWind tokens in `tailwind.config.js` and not hardcode colors inside components.
+
+### Why this matters
+
+This file has two jobs:
+
+1. Tell Tailwind which files may contain utility classes
+2. Define the design tokens the app is allowed to use
+
+That second job is especially important here.
+
+This file is not just a build file.
+It is also part of the design system.
+
+### React vs React Native note
+
+This part feels familiar to a web engineer.
+
+The difference is:
+in React Native, those class names are not going to the browser DOM.
+They are being interpreted into React Native styling through NativeWind.
+
+So the Tailwind config is similar in concept, but the runtime target is different.
+
+---
+
+## Step 5 — Create `global.css`
+
+### What we did
+
+We created a root CSS file:
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### Why we did it
+
+The NativeWind installation guide explicitly says to create a CSS file and add the Tailwind directives.[web:10]
+
+### Why this matters
+
+Even though React Native is not browser CSS-based, NativeWind still uses a CSS entry file as part of its processing pipeline.
+
+The CSS file is used as the input that Metro and NativeWind consume during bundling.
+The NativeWind docs tell you to create the CSS file, then point Metro at it, then import it into the app.[web:10]
+
+### React vs React Native note
+
+In Next.js:
+- `globals.css` is a real browser CSS asset
+
+In NativeWind:
+- `global.css` is not page CSS in the traditional browser sense
+- it is part of the styling compilation pipeline
+
+So it is closer to a **styling input artifact** than a classic DOM stylesheet.
+
+---
+
+## Step 6 — Update `babel.config.js`
+
+### What we did
+
+We updated Babel config for NativeWind-compatible JSX handling.
+
+The working version used for this feature was:
+
+```js
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: [
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+    ],
+  };
+};
+```
+
+### Why we did it
+
+The NativeWind install flow includes a Babel setup step.[web:10]
+
+Expo also documents `babel.config.js` as the root Babel configuration file for projects that need custom Babel behavior.[web:41]
+
+For this setup, Babel needed to understand that JSX should be processed with the NativeWind-aware import source.
+
+### What Babel is here
+
+For a React/Next.js engineer, the simplest explanation is:
+
+**Babel is the JavaScript and JSX transformation layer.**
+
+Expo documents `babel.config.js` as the file used when you need to customize Babel in an Expo app, and new Expo apps use `babel-preset-expo` by default.[web:41]
+
+In this project, Babel is not the bundler.
+Babel’s job is more like:
+- transform JSX and JavaScript
+- apply configured syntax transforms
+- prepare code before Metro bundles it
+
+### Why `babel.config.js` exists
+
+`babel.config.js` is the place where the Expo project defines custom Babel behavior.[web:41]
+
+For this feature, the file mattered because NativeWind needed JSX transformation behavior to line up with its styling model.
+
+### Important issue we hit
+
+An earlier config attempt incorrectly used an older NativeWind-style Babel setup and caused Metro to fail with:
+
+- `.plugins is not a valid Plugin property`
+
+That error taught an important lesson:
+**version mismatch inside config files can break the entire build even if the rest of the app is fine**.
+
+### Engineering note
+
+For web engineers:
+think of Babel here as the **code transformation layer**, not the final bundle packager.
+
+A useful mental model is:
+- Babel = transform step
+- Metro = bundle step
+
+That is not perfect, but it is accurate enough to reason about the setup.
+
+---
+
+## Step 7 — Create `metro.config.js`
+
+### What we did
+
+We created a Metro config file:
+
+```js
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = withNativeWind(config, { input: "./global.css" });
+```
+
+### Why we did it
+
+The NativeWind installation guide explicitly includes creating or modifying `metro.config.js`.[web:10]
+
+The guide also says Metro must be configured to use the CSS input file.[web:10]
+
+### What Metro is
+
+For a web engineer, Metro is easiest to understand as:
+
+**Metro is the JavaScript bundler used by Expo and React Native.**
+
+Expo’s docs say Expo CLI uses Metro during `npx expo start` and `npx expo export` to bundle JavaScript code and assets, and that Metro is built and optimized for React Native.[web:40]
+
+So if you come from Next.js or Vite, Metro occupies the space of:
+- dev bundler
+- module graph resolver
+- asset bundler
+- transformation pipeline coordinator
+
+### Why we use `metro.config.js`
+
+We use `metro.config.js` when the default bundler behavior needs project-specific customization.
+
+For this feature, Metro had to be told:
+- NativeWind is participating in bundling
+- the CSS input file is `./global.css`
+
+Without this file, NativeWind would not be correctly integrated into the bundling process described by the official install flow.[web:10]
+
+### Why this matters
+
+This is one of the biggest React web to React Native mindset changes.
+
+On the web, you may think:
+Tailwind config plus CSS import should be enough.
+
+In Expo NativeWind, that is not enough.
+Metro needs to be part of the solution.
+
+### React vs React Native note
+
+A helpful mental mapping is:
+
+- Vite / Webpack / Turbopack in web → bundler role
+- Metro in Expo / React Native → bundler role
+
+But Metro is not just Webpack with another name.
+It is specifically designed for the React Native runtime and asset model.[web:40]
+
+---
+
+## Step 8 — Import the CSS file in the app entry path
+
+### What we did
+
+We imported the CSS file in `app/_layout.tsx`:
+
+```tsx
+import "../global.css";
+import { Stack } from "expo-router";
+
+export default function RootLayout() {
+  return <Stack />;
+}
+```
+
+### Why we did it
+
+The NativeWind install flow says the CSS file must be imported into the app.[web:10]
+
+Because this project uses Expo Router, the root layout is a natural place to do that.
+It ensures the styling pipeline is loaded from the app startup path.
+
+### Why this matters
+
+If the CSS file exists but is never imported:
+- the config can look correct
+- Metro can still start
+- styles may not apply correctly
+
+So this is one of those steps that looks small but is actually essential.
+
+### React vs React Native note
+
+For a Next.js engineer, this feels similar to importing a global stylesheet in:
+- `app/layout.tsx`
+or
+- `_app.tsx`
+
+That analogy is useful.
+
+The difference is that here the CSS import participates in NativeWind’s style pipeline rather than styling DOM elements directly.
+
+---
+
+## Step 9 — Add NativeWind TypeScript support
+
+### What we did
+
+We created this file:
+
+```ts
+/// <reference types="nativewind/types" />
+```
+
+inside:
+
+```bash
+nativewind-env.d.ts
+```
+
+### Why we did it
+
+The NativeWind docs say TypeScript projects should include the type definitions, and one simple method is to create `nativewind-env.d.ts` with the triple-slash reference.[web:10]
+
+### Why this matters
+
+Without this, TypeScript may not properly understand `className` support on React Native components.
+
+For a strict TypeScript codebase, that matters immediately.
+
+### React vs React Native note
+
+In web React, `className` is native to JSX elements like `div` and `button`.
+
+In React Native:
+- `View`
+- `Text`
+- `Pressable`
+
+do not natively mean DOM element with CSS classes.
+
+NativeWind extends that model, and TypeScript needs to know that extension exists.
+
+That is why this file matters.
+
+---
+
+## Step 10 — Create the base folder structure
+
+### What we did
+
+We created the documented app structure while deferring backend-specific files for later.
+
+Example commands:
+
+```bash
+mkdir -p app/\(auth\)
+touch app/\(auth\)/sign-in.tsx
+touch app/\(auth\)/sign-up.tsx
+touch app/\(auth\)/select-role.tsx
+
+mkdir -p "app/(student)"
+touch "app/(student)/index.tsx"
+mkdir -p "app/(student)/[yearId]"
+touch "app/(student)/[yearId]/index.tsx"
+mkdir -p "app/(student)/[yearId]/[subjectId]"
+touch "app/(student)/[yearId]/[subjectId]/index.tsx"
+mkdir -p "app/(student)/course"
+touch "app/(student)/course/[courseId].tsx"
+mkdir -p "app/(student)/watch"
+touch "app/(student)/watch/[lessonId].tsx"
+
+mkdir -p "app/(teacher)"
+touch "app/(teacher)/dashboard.tsx"
+mkdir -p "app/(teacher)/course"
+touch "app/(teacher)/course/new.tsx"
+mkdir -p "app/(teacher)/course/[courseId]"
+touch "app/(teacher)/course/[courseId]/edit.tsx"
+mkdir -p "app/(teacher)/course/[courseId]/lessons"
+touch "app/(teacher)/course/[courseId]/lessons/new.tsx"
+touch "app/(teacher)/enrollments.tsx"
+
+mkdir -p components/student components/teacher components/shared
+mkdir -p lib
+touch lib/types.ts
+mkdir -p constants
+touch constants/colors.ts
+```
+
+### Why we did it
+
+The architecture doc defines the target app structure, including route groups and shared folders.
+
+The code standards also define naming conventions:
+- folders use kebab-case
+- components use PascalCase
+- utility files use camelCase
+
+### Why this matters
+
+This feature was not only about package installation.
+It also created the code organization baseline needed for:
+- student flow routes
+- teacher flow routes
+- shared components
+- constants
+- local type definitions
+
+### Important implementation decision
+
+The original architecture includes:
+- `lib/supabase.ts`
+- `lib/clerk.ts`
+
+We intentionally skipped those files in this feature because backend setup is deferred.
+
+That means we followed the architecture shape while still respecting the current delivery phase.
+
+---
+
+## Step 11 — Add placeholder files and a styling smoke test
+
+### What we did
+
+We added small placeholder route files so:
+- the structure existed
+- TypeScript would not complain about empty modules
+- NativeWind could be tested immediately
+
+Example screen:
+
+```tsx
+import { View, Text } from "react-native";
+
+export default function PlaceholderScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-background">
+      <Text className="text-base font-semibold text-text-primary">
+        Placeholder
+      </Text>
+    </View>
+  );
+}
+```
+
+### Why we did it
+
+This gave us a direct test for the most important question:
+
+**Is NativeWind actually working, not just installed?**
+
+If this screen rendered with the configured token-based classes, we knew the full chain was working:
+- Tailwind config
+- Babel config
+- Metro config
+- CSS file
+- type support
+- startup import path
+
+### Engineering note
+
+This is a good mobile setup pattern:
+after config work, create a tiny runtime proof immediately.
+
+Do not trust installation success alone.
+Trust a visible runtime confirmation.
+
+---
+
+## Step 12 — Verify the setup locally
+
+### What we did
+
+We started the app with a clean cache:
+
+```bash
+npx expo start --clear
+```
+
+Then verified:
+- Metro starts without errors
+- NativeWind `className` renders correctly
+- TypeScript has no errors
+- the folder structure exists as expected
+
+### Why we did it
+
+This converts configuration work into a real feature completion proof.
+
+### What passed
+
+The confirmed local checks were:
+1. Metro starts without errors
+2. NativeWind `className` renders correctly
+3. No TypeScript errors
+4. Folder structure check passed
+
+### Why this matters
+
+This is the real done state of Feature 02.
+
+A configuration feature is not complete when the files merely exist.
+It is complete when the app proves the configuration works.
+
+---
+
+## Problems encountered in Feature 02
+
+### Problem 1 — NativeWind version confusion
+
+At first, configuration advice mixed patterns from older NativeWind examples with the currently installed version.
+
+### Why this was risky
+
+NativeWind setup has changed across versions, and old examples are still common in blogs and tutorials.
+The official installation flow clearly describes the current process with Tailwind config, Babel setup, Metro config, CSS import, and TypeScript types.[web:10]
+
+### Problem 2 — Incorrect Babel configuration broke bundling
+
+An incorrect Babel config caused Metro bundling to fail with a plugin-related error.
+
+### Why this mattered
+
+This made the app fail before runtime UI validation could even happen.
+
+### Problem 3 — React Native styling pipeline was unfamiliar from a web mindset
+
+The presence of:
+- `global.css`
+- `babel.config.js`
+- `metro.config.js`
+
+can feel strange if you expect styling to behave like web Tailwind.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Re-check the official NativeWind install flow
+
+We verified the setup against the official installation guide rather than relying on memory or mixed examples.[web:10]
+
+### Solution 2 — Treat Metro and Babel as separate concerns
+
+We clarified the roles:
+
+- **Babel** = code transformation layer.[web:41]
+- **Metro** = bundler used by Expo and React Native.[web:40]
+
+That made the config easier to reason about.
+
+### Solution 3 — Use runtime proof instead of config confidence
+
+The final verification was not that the files look right.
+It was:
+- Metro clean
+- `className` works
+- TypeScript clean
+- folder structure ready
+
+That is the right engineering standard.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — Tailwind in React Native is not just Tailwind
+
+In web React, Tailwind is mostly a CSS authoring workflow.
+
+In React Native with NativeWind, it becomes a coordination between:
+- Tailwind config
+- JSX transformation
+- Metro bundling
+- React Native style resolution
+
+So it is conceptually similar, but mechanically deeper.
+
+## Lesson 2 — Metro matters much earlier than a web engineer expects
+
+A web engineer can often ignore the bundler most of the day.
+
+In Expo and React Native, Metro is front-and-center because Expo uses it directly during development and export, and NativeWind hooks into that flow.[web:40][web:10]
+
+## Lesson 3 — `className` is not native to React Native
+
+NativeWind makes React Native components feel more familiar to a web engineer, but that familiarity is provided by tooling, not by the base runtime.
+
+That is why the config files are necessary.
+
+## Lesson 4 — Config files are part of app behavior
+
+In React Native, a wrong config can be as app-breaking as wrong component code.
+
+That is a more serious reality than many web projects, where some config mistakes still let the page limp along.
+
+---
+
+## Discussion notes for Feature 02
+
+### Why do we need both Babel and Metro?
+
+Because they solve different problems.
+
+- Babel transforms source code and JSX according to project rules.[web:41]
+- Metro builds the running app bundle that Expo serves to the device or browser.[web:40]
+
+A useful mental model is:
+
+1. source files enter the transform pipeline
+2. Babel applies syntax and JSX transforms
+3. Metro resolves modules and assets and serves the app bundle
+
+That is simplified, but directionally correct.
+
+### Why is there a `global.css` file in a React Native app?
+
+Because NativeWind uses a CSS input file as part of its setup flow.
+The official install guide explicitly tells you to create one, add Tailwind directives, wire Metro to it, and import it.[web:10]
+
+So the file exists because NativeWind needs a styling input source, not because the app is using browser DOM CSS in the traditional sense.
+
+### Why did we not install video, auth, or backend packages yet?
+
+Because the current project flow is mock-data-first and backend is explicitly deferred for later.
+
+That means doing less now was actually the more correct implementation.
+
+---
+
+## Final output of Feature 02
+
+At the end of this feature, the project had:
+- NativeWind installed
+- Tailwind config created
+- CSS input file created
+- Babel config updated
+- Metro config added
+- NativeWind TypeScript typing enabled
+- base folder structure created
+- placeholder files created
+- verified `className` rendering
+- a stable styling foundation for the next UI features
+
+---
+
+## Completion checklist for Feature 02
+
+Feature 02 is complete when all of these are true:
+
+- NativeWind is installed.[web:10]
+- Tailwind config exists and includes app and component paths.[web:10]
+- NativeWind preset is enabled.[web:10]
+- `global.css` exists with Tailwind directives.[web:10]
+- `babel.config.js` is updated for the NativeWind setup.[web:10][web:41]
+- `metro.config.js` exists and points to the CSS input.[web:10][web:40]
+- `global.css` is imported from app startup.[web:10]
+- `nativewind-env.d.ts` exists for TypeScript.[web:10]
+- the documented folder structure exists
+- no Clerk or Supabase packages were installed yet, by design
+- Metro starts without errors
+- NativeWind `className` renders correctly
+- TypeScript passes without errors
+- the project is ready for the next feature
+
+---
+
+## Official references
+
+These are the two most important references for this feature:
+
+- NativeWind installation guide: [https://www.nativewind.dev/docs/getting-started/installation](https://www.nativewind.dev/docs/getting-started/installation) [web:10]
+- Expo Metro docs: [https://docs.expo.dev/guides/customizing-metro/](https://docs.expo.dev/guides/customizing-metro/) [web:40]
+- Expo Babel docs: [https://docs.expo.dev/versions/latest/config/babel/](https://docs.expo.dev/versions/latest/config/babel/) [web:41]
+
+One important caution: because NativeWind examples online vary by version, always prefer the official install guide over third-party snippets when updating this setup.[web:10]
