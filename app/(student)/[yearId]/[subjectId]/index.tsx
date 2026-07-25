@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
-import {  useLocalSearchParams, useRouter } from "expo-router";
+import { View, FlatList, TouchableOpacity } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import type { Course } from "../../../../lib/types";
 import { getCoursesBySubject } from "../../../../lib/mock-data/student";
 import { t } from "../../../../lib/i18n";
+import {
+  AppText,
+  Card,
+  EmptyState,
+  LoadingScreen,
+  StatusBadge,
+} from "../../../../components/ui";
+import { Spacing } from "../../../../constants/design";
 
 export default function CoursesScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
- const router = useRouter();
+  const router = useRouter();
+
   useEffect(() => {
     async function load() {
       try {
@@ -32,66 +35,63 @@ export default function CoursesScreen() {
         setLoading(false);
       }
     }
+
     if (subjectId) load();
   }, [subjectId]);
 
-  if (loading)
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#7C5CFC" />
-      </View>
-    );
+  if (loading) return <LoadingScreen />;
 
-  if (error)
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-error">{error}</Text>
-      </View>
-    );
+  if (error) return <EmptyState message={error} />;
 
-  if (courses.length === 0)
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-text-secondary">
-          {t("student.no_courses")}
-        </Text>
-      </View>
-    );
+  if (courses.length === 0) {
+    return <EmptyState message={t("student.no_courses")} />;
+  }
 
   return (
     <View className="flex-1 bg-background">
       <FlatList
         data={courses}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: Spacing.base }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            className="bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70"
+            className="mb-3 active:opacity-70"
+            accessibilityRole="button"
             onPress={() => router.push(`/(student)/course/${item.id}`)}
           >
-            <View className="flex-row justify-between items-start">
-              <Text className="text-base font-semibold text-text-primary flex-1 mr-2">
-                {item.title}
-              </Text>
-              {item.isFree && (
-                <View className="bg-accent-light rounded-full px-2 py-0.5">
-                  <Text className="text-xs text-accent font-medium">
-                    {t("student.badge_preview")}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text className="text-xs text-text-muted mt-1">
-              {item.teacherName}
-            </Text>
-            <View className="flex-row justify-between items-center mt-2">
-              <Text className="text-xs text-text-muted">
-                {item.lessonCount} {t("student.lesson_count")}
-              </Text>
-              <Text className="text-lg font-bold text-accent">
-                {item.price.toLocaleString()} {t("student.price_suffix")}
-              </Text>
-            </View>
+            <Card>
+              <View className="flex-row justify-between items-start">
+                <AppText
+                  variant="sectionTitle"
+                  className="flex-1 mr-2"
+                  numberOfLines={2}
+                >
+                  {item.title}
+                </AppText>
+
+                {item.isFree && (
+                  <StatusBadge
+                    variant="preview"
+                    label={t("student.badge_preview")}
+                  />
+                )}
+              </View>
+
+              <AppText variant="muted" className="mt-1">
+                {item.teacherName}
+              </AppText>
+
+              <View className="flex-row justify-between items-center mt-2">
+                <AppText variant="muted">
+                  {item.lessonCount} {t("student.lesson_count")}
+                </AppText>
+
+                <AppText variant="price">
+                  {item.price.toLocaleString("ar-SA")}{" "}
+                  {t("student.price_suffix")}
+                </AppText>
+              </View>
+            </Card>
           </TouchableOpacity>
         )}
       />

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { View, FlatList, TouchableOpacity, Alert } from "react-native";
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+  AppText,
+  Card,
+  PrimaryButton,
+  StatusBadge,
+  LoadingScreen,
+  EmptyState,
+} from "../../../components/ui";
+import { Spacing } from "../../../constants/design";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { t } from "../../../lib/i18n";
 import {
@@ -32,10 +34,9 @@ function LessonRow({
 
   return (
     <TouchableOpacity
-      className={`flex-row items-center bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70 ${
-        isPreview ? "" : "opacity-60"
-      }`}
+      className={`mb-3 active:opacity-70 ${isPreview ? "" : "opacity-60"}`}
       onPress={() => onPress(lesson)}
+      accessibilityRole="button"
       accessibilityLabel={lesson.title}
       accessibilityHint={
         isPreview
@@ -43,52 +44,40 @@ function LessonRow({
           : t("student.lesson_locked_hint")
       }
     >
-      {/* Icon */}
-      <View
-        className={`w-9 h-9 rounded-full items-center justify-center me-3 ${
-          isPreview ? "bg-accent-light" : "bg-surface-secondary"
-        }`}
-      >
-        <Text
-          className={`text-base ${isPreview ? "text-accent" : "text-locked"}`}
-        >
-          {isPreview ? "▶" : "🔒"}
-        </Text>
-      </View>
-
-      {/* Title + duration */}
-      <View className="flex-1">
-        <Text
-          className={`text-sm font-medium ${
-            isPreview ? "text-text-primary" : "text-text-muted"
-          }`}
-          numberOfLines={1}
-        >
-          {lesson.title}
-        </Text>
-        {lesson.durationSeconds !== null && (
-          <Text className="text-xs text-text-muted mt-0.5">
-            {formatDuration(lesson.durationSeconds)}
-          </Text>
-        )}
-      </View>
-
-      {/* Badge */}
-      <View
-        className={`px-2 py-0.5 rounded-full ms-2 ${
-          isPreview ? "bg-accent-light" : "bg-surface-secondary"
-        }`}
-      >
-        <Text
-          className={`text-xs font-medium ${
-            isPreview ? "text-accent" : "text-locked"
+      <Card className="flex-row items-center">
+        <View
+          className={`w-9 h-9 rounded-full items-center justify-center me-3 ${
+            isPreview ? "bg-accent-light" : "bg-surface-secondary"
           }`}
         >
-          {isPreview
-            ? t("student.badge_free_preview")
-            : t("student.badge_locked")}
-        </Text>
-      </View>
+          <AppText className={isPreview ? "text-accent" : "text-locked"}>
+            {isPreview ? "▶" : "🔒"}
+          </AppText>
+        </View>
+
+        <View className="flex-1">
+          <AppText variant={isPreview ? "body" : "muted"} numberOfLines={1}>
+            {lesson.title}
+          </AppText>
+
+          {lesson.durationSeconds !== null && (
+            <AppText variant="muted" className="mt-0.5">
+              {formatDuration(lesson.durationSeconds)}
+            </AppText>
+          )}
+        </View>
+
+        <View className="ms-2">
+          <StatusBadge
+            variant={isPreview ? "preview" : "locked"}
+            label={
+              isPreview
+                ? t("student.badge_free_preview")
+                : t("student.badge_locked")
+            }
+          />
+        </View>
+      </Card>
     </TouchableOpacity>
   );
 }
@@ -133,71 +122,53 @@ export default function CourseDetailScreen() {
     }
   }
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#7C5CFC" />
-      </View>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
-  if (error || !course) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-error">{error}</Text>
-      </View>
-    );
-  }
+  if (error || !course)
+    return <EmptyState message={error ?? t("student.error_load_course")} />;
 
   return (
     <View className="flex-1 bg-background">
       <FlatList
         data={lessons}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: Spacing.base }}
         ListHeaderComponent={
           <View className="mb-6">
             {/* Course title */}
-            <Text className="text-base font-semibold text-text-primary mb-1">
+            <AppText variant="sectionTitle" className="mb-1">
               {course.title}
-            </Text>
+            </AppText>
 
             {/* Teacher */}
-            <Text className="text-xs text-text-muted mb-3">
+            <AppText variant="muted" className="mb-3">
               {t("student.by_teacher")}: {course.teacherName}
-            </Text>
+            </AppText>
 
             {/* Description */}
-            <Text className="text-sm text-text-secondary mb-4 leading-5">
+            <AppText variant="secondary" className="mb-4 leading-5">
               {course.description}
-            </Text>
+            </AppText>
 
             {/* Price row */}
             <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-lg font-bold text-accent">
+              <AppText variant="price">
                 {course.price.toLocaleString("ar-SA")}{" "}
                 {t("student.price_suffix")}
-              </Text>
-              <TouchableOpacity className="bg-accent rounded-md px-4 py-2">
-                <Text className="text-white text-sm font-medium">
-                  {t("student.enroll_button")}
-                </Text>
-              </TouchableOpacity>
+              </AppText>
+              <PrimaryButton
+                label={t("student.enroll_button")}
+                onPress={() => {}}
+              />
             </View>
 
             {/* Lessons section header */}
-            <Text className="text-base font-semibold text-text-primary mb-3">
+            <AppText variant="sectionTitle" className="mb-3">
               {t("student.lessons_header")}
-            </Text>
+            </AppText>
           </View>
         }
-        ListEmptyComponent={
-          <View className="items-center py-10">
-            <Text className="text-sm text-text-muted">
-              {t("student.no_lessons")}
-            </Text>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState message={t("student.no_lessons")} />}
         renderItem={({ item }) => (
           <LessonRow lesson={item} onPress={handleLessonPress} />
         )}

@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, FlatList, TouchableOpacity } from "react-native";
+import { AppText, Card, LoadingScreen, EmptyState } from "../../components/ui";
+import { Spacing } from "../../constants/design";
 import { useRouter } from "expo-router";
 import type { AcademicYear } from "../../lib/types";
 import { getAcademicYears } from "../../lib/mock-data/student";
@@ -43,57 +39,37 @@ function toggleLang() {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#7C5CFC" />
-      </View>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
-  if (error) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-error">{error}</Text>
-      </View>
-    );
-  }
+  if (error) return <EmptyState message={error} />;
 
-  if (years.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-text-secondary">
-          {t("student.no_years")}
-        </Text>
-      </View>
-    );
-  }
+ if (years.length === 0) return <EmptyState message={t("student.no_years")} />;
 
   return (
     <View className="flex-1 bg-background">
       <FlatList
         data={years}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: Spacing.base }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            className="bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70"
+            className="mb-3 active:opacity-70"
             onPress={() => router.push(`/(student)/${item.id}`)}
           >
-            <Text className="text-base font-semibold text-text-primary">
-              {item.name}
-            </Text>
-            <Text className="text-xs text-text-muted mt-1">
-              {item.subjectCount} {t("student.subject_count")}
-            </Text>
+            <Card>
+              <AppText variant="sectionTitle">{item.name}</AppText>
+              <AppText variant="muted" className="mt-1">
+                {item.subjectCount} {t("student.subject_count")}
+              </AppText>
+            </Card>
           </TouchableOpacity>
         )}
       />
 
-      <TouchableOpacity onPress={toggleLang} style={{ padding: 12 }}>
-        <Text style={{ color: "#7C5CFC" }}>
+      <TouchableOpacity onPress={toggleLang} style={{ padding: Spacing.md }}>
+        <AppText variant="muted" className="text-accent">
           {lang === "ar" ? "Switch to English" : "التبديل إلى العربية"}
-        </Text>
+        </AppText>
       </TouchableOpacity>
     </View>
   );

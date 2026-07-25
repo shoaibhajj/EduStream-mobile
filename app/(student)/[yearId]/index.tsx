@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+  LoadingScreen,
+  EmptyState,
+  AppText,
+  Card,
+} from "../../../components/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { Subject } from "../../../lib/types";
 import { getSubjectsByYear } from "../../../lib/mock-data/student";
 import { t } from "../../../lib/i18n";
+import { FlatList, TouchableOpacity, View } from "react-native";
+import { Spacing } from "../../../constants/design";
 
 export default function SubjectsScreen() {
   const { yearId } = useLocalSearchParams<{ yearId: string }>();
@@ -33,49 +34,31 @@ export default function SubjectsScreen() {
     if (yearId) load();
   }, [yearId]);
 
-  if (loading)
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#7C5CFC" />
-      </View>
-    );
+  if (loading) return <LoadingScreen />;
 
-  if (error)
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-error">{error}</Text>
-      </View>
-    );
+  if (error) return <EmptyState message={error} />;
+ if (subjects.length === 0) return <EmptyState message={t("your.empty.key")} />;
 
-  if (subjects.length === 0)
-    return (
-      <View className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-base font-semibold text-text-secondary">
-          {t("student.no_subjects")}
-        </Text>
-      </View>
-    );
-
-  return (
-    <View className="flex-1 bg-background">
-      <FlatList
-        data={subjects}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            className="bg-surface border border-border rounded-xl p-4 mb-3 active:opacity-70"
-            onPress={() => router.push(`/(student)/${yearId}/${item.id}`)}
-          >
-            <Text className="text-base font-semibold text-text-primary">
-              {item.name}
-            </Text>
-            <Text className="text-xs text-text-muted mt-1">
+return (
+  <View className="flex-1 bg-background">
+    <FlatList
+      data={subjects}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={{ padding: Spacing.base }}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          className="mb-3 active:opacity-70"
+          onPress={() => router.push(`/(student)/${yearId}/${item.id}`)}
+        >
+          <Card>
+            <AppText variant="sectionTitle">{item.name}</AppText>
+            <AppText variant="muted" className="mt-1">
               {item.courseCount} {t("student.course_count")}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
-  );
+            </AppText>
+          </Card>
+        </TouchableOpacity>
+      )}
+    />
+  </View>
+);
 }

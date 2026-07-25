@@ -1,10 +1,10 @@
 # EduStream Mobile — Progress Tracker
 
 ## Current Status
-Feature 05 complete — Course Detail screen, lesson list, free preview and locked states are fully built with mock data. Navigation from the course list into Course Detail, and from a preview lesson into the Watch screen placeholder, both work. Arabic is the default experience; English is confirmed working via the language toggle.
+Feature 06 complete — Shared design foundations are built and wired into all existing student screens. `components/ui/` now provides ScreenContainer, AppText, PrimaryButton, SecondaryButton, Card, StatusBadge, EmptyState, and LoadingScreen, all built on NativeWind classes with no hardcoded colors. `constants/design.ts` centralizes spacing, radius, and font-size tokens for contexts where className isn't available (e.g. `contentContainerStyle`). Academic Years, Subjects, Courses, and Course Detail screens were all migrated from ad-hoc inline styles to the shared components. Arabic remains the default and RTL layout still renders correctly; English toggle confirmed working across all migrated screens.
 
 ## Next Up
-Feature 06 — Build Shared Design Foundations
+Feature 07 — Create Mock Data Layer
 
 ## Build Progress
 
@@ -14,12 +14,12 @@ Feature 06 — Build Shared Design Foundations
 - 03 — Build Student Browse Screens with Mock Data
 - 04 — Add Arabic-First Localization Foundation
 - 05 — Build Course Detail + Lesson List + Preview/Locked States
+- 06 — Build Shared Design Foundations
 
 ### In Progress
 - None
 
 ### Not Started
-- 06 — Build Shared Design Foundations
 - 07 — Create Mock Data Layer
 - 08 — Build Student Home Screen
 - 09 — Build Subject/Course Browsing Screens
@@ -61,6 +61,14 @@ Feature 06 — Build Shared Design Foundations
 - All new visible strings added to `lib/i18n/ar.ts` and `lib/i18n/en.ts` — no hardcoded text in screens.
 - RTL-safe styling used throughout: `me-3`, `ms-2` instead of hardcoded left/right margins.
 - Confirmed full flow works in Arabic (default) and English (via toggle).
+- Created `constants/design.ts` for spacing, radius, font-size, and font-weight tokens used outside `className` contexts (e.g. `contentContainerStyle`).
+- Created `components/ui/` with ScreenContainer, AppText, PrimaryButton, SecondaryButton, Card, StatusBadge, EmptyState, and LoadingScreen, plus a barrel `index.ts` export.
+- Removed all hardcoded hex colors from screens (e.g. `#7C5CFC` on `ActivityIndicator`) in favor of `LoadingScreen`, which reads from `constants/colors.ts`.
+- Migrated `app/(student)/index.tsx`, `app/(student)/[yearId]/index.tsx`, `app/(student)/[yearId]/[subjectId]/index.tsx`, and `app/(student)/course/[courseId].tsx` to use shared UI primitives instead of duplicated inline Tailwind class strings.
+- Fixed a regression in `LessonRow` where the leading icon block had been mistakenly replaced with a duplicate `StatusBadge` — restored to icon-circle (start) + title/duration (middle) + status badge (end) layout.
+- Verified no remaining hardcoded hex colors, no duplicated card style strings, and no raw `padding: 16` values remain in `app/` or `components/` via targeted `grep` checks.
+- Confirmed `npx tsc --noEmit` runs clean and `npx expo start --clear` starts without errors after the full migration.
+- Confirmed Arabic remains default and RTL layout still renders correctly across all migrated screens; English toggle confirmed working on each.
 
 ## Architecture Decisions
 - Keep the project UI-first and mock-data-first until the dedicated backend phase.
@@ -73,6 +81,8 @@ Feature 06 — Build Shared Design Foundations
 - RTL is enforced globally via `I18nManager.forceRTL(true)`. Full RTL layout takes effect after a full app restart on Android. All new screens must avoid hardcoded `left`/`right` assumptions in styles — use `Start`/`End` variants (e.g., `marginStart`, `paddingEnd`) where directional spacing is needed.
 - All visible UI strings must live in translation files under `lib/i18n/`. Hardcoded text in JSX is not allowed from Feature 04 onward.
 - Lesson access logic (preview vs locked) lives in the screen for now using the `isPreview` field. When Supabase is connected, this will be replaced by checking enrollment status from RLS-protected queries.
+- All shared visual primitives live in `components/ui/` and are the required building blocks for new screens going forward — no new screen should re-declare card, button, or badge styles inline.
+- Spacing, radius, and typography size tokens used outside `className` contexts live in `constants/design.ts`; color tokens remain the single responsibility of `constants/colors.ts` and `tailwind.config.js`.
 
 ## Notes / Risks
 - NativeWind v4 configuration must follow the current installation flow exactly; older Babel examples can break Metro bundling.
@@ -83,3 +93,4 @@ Feature 06 — Build Shared Design Foundations
 - The temporary language toggle added for testing should be removed or gated behind a `__DEV__` flag before any production build.
 - Feature numbering shifted by +1 from Feature 05 onward due to the insertion of the localization feature at position 04.
 - The Watch screen is a placeholder only. Real video playback (`expo-av` + WebView embed) is deferred to a later feature. The screen already receives the correct `lessonId` param via Expo Router dynamic routing.
+- Going forward, any new screen that needs a card, button, badge, empty state, or loading spinner must import from `components/ui/` rather than writing new inline Tailwind class strings, to keep the design system from fragmenting again.

@@ -1,5 +1,113 @@
 # EduStream Mobile — How We Implement Each Feature
 
+> ## Important note for any AI agent writing in this file
+>
+> This file is not just project documentation.
+> It is a **practical implementation guide** for the EduStream Mobile project.
+>
+> The main audience for this file is a software engineer who already works with:
+> - React
+> - Next.js
+>
+> but is using this project to learn and reason more deeply about:
+> - React Native
+> - Expo
+> - Expo Router
+> - NativeWind
+> - mobile-specific engineering decisions
+>
+> Because of that, every feature written in this file must do more than summarize the result.
+> It must explain the feature in a way that helps a React / Next.js engineer understand:
+> - what was built
+> - why it was built that way
+> - how it was implemented step by step
+> - what problems happened
+> - how those problems were solved
+> - what is different in React Native compared with React web / Next.js
+> - what engineering lessons are important to remember later
+>
+> This file should always be written as a **real guide**, not as short release notes, not as a vague summary, and not as AI-style generic documentation.
+>
+> ### Writing purpose
+>
+> The purpose of each feature entry in this file is:
+> 1. to document exactly what was done
+> 2. to explain the implementation decisions clearly
+> 3. to preserve engineering reasoning for future sessions
+> 4. to teach React Native concepts through real project work
+> 5. to produce content that is immediately useful to copy, study, and revisit later
+>
+> ### Required writing style
+>
+> Any AI agent writing in this file should follow these rules:
+>
+> - Write in clean Markdown that is ready to **copy and paste directly into this `.md` file**
+> - Use proper headings and structure
+> - Write complete sections, not partial notes
+> - Be concrete and specific, not vague
+> - Include exact commands when commands were part of the implementation
+> - Include exact file names and folders when they matter
+> - Include code snippets only when they help explain the implementation
+> - Explain **why** each step mattered, not only **what** happened
+> - Include practical React vs React Native notes where useful
+> - Include engineering discussion and lessons, not only mechanical steps
+> - Keep the writing clear enough for later reuse in future features
+>
+> ### Required format for each feature
+>
+> Unless there is a strong reason to change it, each feature should follow this structure:
+>
+> ```md
+> # Feature XX — [Feature Name]
+>
+> ## What this feature does
+> ## Why this feature matters
+> ## Original implementation plan
+> ## Step 1 — ...
+> ## Step 2 — ...
+> ## Problems encountered
+> ## How those problems were solved
+> ## React vs React Native lessons from this feature
+> ## Discussion notes
+> ## Final output of Feature XX
+> ## Completion checklist for Feature XX
+> ## Official references
+> ```
+>
+> ### Important quality rule
+>
+> The output must be good enough to be pasted into this file **without needing rewriting**.
+>
+> That means the writing should already be:
+> - organized
+> - readable
+> - technically useful
+> - consistent with the rest of the file
+> - suitable for long-term project documentation
+>
+> ### What to avoid
+>
+> Any AI agent writing here should avoid:
+> - short shallow summaries
+> - generic AI phrasing
+> - bullet-only explanations with no reasoning
+> - undocumented code dumps with no context
+> - writing that assumes the reader is new to programming
+> - writing that ignores the React / Next.js background of the reader
+> - output that is not ready to paste directly into Markdown
+>
+> ### Final reminder
+>
+> This file is a **real React Native learning-and-implementation guide** built from the actual EduStream Mobile project.
+>
+> Write each feature so that a future AI agent — or the engineer reading it later — can quickly understand:
+> - what happened
+> - why it happened
+> - how it was implemented
+> - what should be remembered for the next feature
+
+
+
 This file is a living implementation guide for the EduStream Mobile project.
 
 For each feature, this document records:
@@ -3397,3 +3505,1395 @@ These were the most important official references for this feature:
 
 One important caution:
 for Arabic-first mobile UI, lesson-row design must be tested in RTL first, not only after the English layout looks correct.[file:2][cite:1]
+
+----------
+
+# Feature 06 — Build Shared Design Foundations
+
+## What this feature does
+
+This feature creates the first reusable shared UI foundation for the EduStream mobile app.
+
+It does **not** add backend logic, real API data, Supabase, Clerk, or advanced theming infrastructure.
+
+Instead, it creates a small design system layer that future screens can reuse consistently, including:
+- shared design tokens/constants
+- reusable UI primitives
+- shared loading / empty / badge / button patterns
+- RTL-safe layout habits
+- migration of existing student screens away from repeated ad-hoc styling
+
+The final success condition for this feature is:
+- the existing student screens still work
+- those screens now use shared design foundations where appropriate
+- Arabic remains the default language
+- English still works as a secondary language
+- visible UI text still uses translation keys
+- future screens can reuse shared UI patterns instead of re-deciding styles each time
+
+---
+
+## Why this feature matters
+
+Up to Feature 05, the project already had working student browse and course-detail screens.
+
+But those screens still repeated many of the same style decisions directly inside route files, such as:
+- card container classes
+- text style combinations
+- loading-state layout
+- empty-state layout
+- badge styling
+- button styling
+
+That works for a few early screens, but it becomes expensive later.
+
+Without a shared design foundation:
+- the UI becomes inconsistent
+- screen files become noisy
+- refactoring becomes harder
+- RTL mistakes become easier to repeat
+- future features take longer because styling decisions are re-made every time
+
+So this feature is not “visual cleanup.”
+It is a structural UI engineering feature.
+
+For a React / Next.js engineer, this is similar to the moment when a project moves from:
+- page-local class strings
+to
+- shared UI primitives like `Button`, `Card`, `SectionTitle`, and layout wrappers
+
+In React Native, this matters even more because:
+- screens are often dense
+- repeated list patterns appear quickly
+- mobile interaction patterns should stay consistent
+- Arabic-first and RTL-safe choices need to become defaults, not reminders
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the latest repo documents before changing code
+2. inspect the current student screens and identify repeated UI patterns
+3. create shared design constants for spacing / radius / typography
+4. create a minimal `components/ui` foundation layer
+5. migrate current student screens to use those shared primitives
+6. keep Arabic-first and RTL-safe rules intact
+7. verify Arabic first, then English
+8. confirm the new primitives are enough for the next feature without over-engineering
+
+Important project constraints remained active here:
+- still mock-data-first
+- no Supabase yet
+- no Clerk yet
+- Arabic is the default language
+- all visible UI text must use translation keys
+- avoid hardcoded left/right directional styling
+- keep the shared UI system simple and reusable
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before changing code, we re-read the latest versions of:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+### Why we did it
+
+This confirmed the current source of truth before implementation.
+
+That mattered because:
+- the feature numbering had already shifted earlier when the Arabic-first localization foundation was inserted
+- the project was still in the mock-data-first phase
+- Arabic-first rules were now mandatory for every next feature
+- the UI context document already defined the intended mobile visual language
+- the progress tracker was the source of truth for current feature order
+
+### Engineering note
+
+This is one of the healthiest habits in repo-driven implementation:
+
+**read the current repo docs before writing the next feature**
+
+That prevents drift between:
+- architecture documents
+- progress tracking
+- feature numbering
+- actual implementation decisions
+
+---
+
+## Step 2 — Inspect the current screens and identify duplicated styling
+
+### What we did
+
+We inspected the student screens already built in the project, especially:
+- Academic Years
+- Subjects
+- Courses
+- Course Detail
+- Watch placeholder
+
+We looked for repeated patterns such as:
+- `bg-surface border border-border rounded-xl p-4`
+- loading-state wrappers
+- empty-state wrappers
+- section-title text styles
+- price text styles
+- badge styles for preview / locked
+- button styles
+- repeated `contentContainerStyle` spacing values
+
+### Why we did it
+
+This step was necessary to avoid building abstractions blindly.
+
+A common mistake in early design-system work is:
+- creating too many components
+- abstracting patterns that only appear once
+- making the UI layer more complex than the app needs
+
+So instead of inventing a large “design system,” we extracted only the patterns already visible in the current student flow and the immediately upcoming screens.
+
+### Engineering note
+
+This is similar to a good React web refactor:
+
+do not start by asking,
+> “What full design system could exist?”
+
+Start by asking,
+> “What repeated UI decisions already exist, and which ones are worth centralizing now?”
+
+That keeps the shared layer practical instead of theoretical.
+
+---
+
+## Step 3 — Add shared design token constants
+
+### What we did
+
+We created:
+
+```bash
+touch constants/design.ts
+```
+
+Then we added shared constants for:
+- spacing
+- border radius
+- typography labels
+
+Example:
+
+```ts
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  "2xl": 24,
+} as const;
+
+export const radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  full: 9999,
+} as const;
+
+export const typography = {
+  caption: "text-xs",
+  body: "text-sm",
+  title: "text-base",
+  price: "text-lg",
+} as const;
+```
+
+### Why we did it
+
+The project already had shared color tokens in the Tailwind / NativeWind setup.
+
+But non-color design values such as spacing and radius were still being repeated in screens directly, especially in:
+- `contentContainerStyle`
+- layout wrappers
+- reusable component decisions
+
+So this file became the shared source of truth for non-color layout values that are easier to reuse from TypeScript than from utility classes alone.
+
+### Why this matters
+
+This is an important React Native difference.
+
+In web React with Tailwind, many spacing decisions can stay entirely in class strings.
+
+In React Native, some places still need numeric values, especially:
+- `contentContainerStyle`
+- inline numeric props
+- hybrid component APIs
+
+So a small constants file is more useful than it first appears.
+
+---
+
+## Step 4 — Create the shared `components/ui` folder
+
+### What we did
+
+We created the shared UI folder:
+
+```bash
+mkdir -p components/ui
+```
+
+Then we created these files:
+
+```bash
+touch components/ui/AppText.tsx
+touch components/ui/ScreenContainer.tsx
+touch components/ui/Card.tsx
+touch components/ui/PrimaryButton.tsx
+touch components/ui/SecondaryButton.tsx
+touch components/ui/StatusBadge.tsx
+touch components/ui/EmptyState.tsx
+touch components/ui/LoadingScreen.tsx
+touch components/ui/ListRow.tsx
+touch components/ui/index.ts
+```
+
+### Why we did it
+
+The architecture already separates route files from reusable code.
+
+So the correct place for shared presentational building blocks was outside `app/`, inside a dedicated shared components folder.
+
+This keeps route files focused on:
+- route params
+- local state
+- data loading
+- navigation
+- interaction behavior
+
+while moving reusable visual structure into shared components.
+
+### Why this matters
+
+This is the beginning of a real UI layer.
+
+It is still intentionally small, but it creates a cleaner separation between:
+- screen logic
+- shared presentation patterns
+
+For a React / Next.js engineer, this is the same kind of maturity step as introducing:
+- `components/ui/Button.tsx`
+- `components/ui/Card.tsx`
+- `components/ui/Text.tsx`
+
+instead of repeating class strings in every page.
+
+---
+
+## Step 5 — Create `AppText` as the typography primitive
+
+### What we did
+
+We created:
+
+```tsx
+// components/ui/AppText.tsx
+import { Text, type TextProps } from "react-native";
+
+type Variant =
+  | "title"
+  | "body"
+  | "muted"
+  | "secondary"
+  | "caption"
+  | "price"
+  | "error"
+  | "button";
+
+const variantClasses: Record<Variant, string> = {
+  title: "text-base font-semibold text-text-primary",
+  body: "text-sm font-medium text-text-primary",
+  muted: "text-xs text-text-muted",
+  secondary: "text-sm text-text-secondary",
+  caption: "text-xs font-medium text-text-secondary",
+  price: "text-lg font-bold text-accent",
+  error: "text-base font-semibold text-error",
+  button: "text-sm font-medium",
+};
+
+type Props = TextProps & {
+  variant?: Variant;
+  className?: string;
+};
+
+export function AppText({
+  variant = "body",
+  className = "",
+  children,
+  ...props
+}: Props) {
+  return (
+    <Text className={`${variantClasses[variant]} ${className}`} {...props}>
+      {children}
+    </Text>
+  );
+}
+```
+
+### Why we did it
+
+Text styling was one of the most repeated decisions in the app.
+
+The same combinations appeared repeatedly:
+- title text
+- secondary descriptive text
+- muted metadata text
+- price text
+- error text
+
+So `AppText` became the smallest useful typography primitive.
+
+### Why this matters
+
+This component does **not** contain visible product strings.
+It only centralizes typography decisions.
+
+That is important because the project rule still remains:
+
+**all visible UI text must come from translation keys or data, not from hardcoded component defaults**
+
+So `AppText` standardizes style only, not content.
+
+### React vs React Native note
+
+For a web engineer, this is similar to having a shared `Text` component or typography wrapper.
+
+The difference is that React Native text styling often becomes noisier faster because `Text` nodes are reused heavily and there is no browser default typographic baseline to lean on.
+
+So a small text primitive pays off early.
+
+---
+
+## Step 6 — Create `ScreenContainer` as the page wrapper
+
+### What we did
+
+We created:
+
+```tsx
+// components/ui/ScreenContainer.tsx
+import { SafeAreaView, View, type ViewProps } from "react-native";
+
+type Props = ViewProps & {
+  className?: string;
+};
+
+export function ScreenContainer({
+  className = "",
+  children,
+  ...props
+}: Props) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className={`flex-1 bg-background ${className}`} {...props}>
+        {children}
+      </View>
+    </SafeAreaView>
+  );
+}
+```
+
+### Why we did it
+
+Multiple screens repeated the same full-screen wrapper pattern:
+- `flex-1`
+- background color
+- safe screen structure
+
+This wrapper ensures a consistent page baseline for current and future screens.
+
+### Why this matters
+
+This is a small abstraction, but it is strategically useful.
+
+It reduces repeated screen boilerplate and gives future features a shared place to apply screen-level behavior consistently if needed later.
+
+### React vs React Native note
+
+In Next.js, the equivalent idea might be:
+- a page shell
+- a layout wrapper
+- a content container component
+
+In React Native, wrapping screens consistently matters because:
+- safe-area behavior matters on real devices
+- full-screen layout is the default screen shape
+- background consistency is more visible in mobile transitions
+
+---
+
+## Step 7 — Create `Card` as the shared surface container
+
+### What we did
+
+We created:
+
+```tsx
+// components/ui/Card.tsx
+import { View, type ViewProps } from "react-native";
+
+type Props = ViewProps & {
+  className?: string;
+};
+
+export function Card({ className = "", children, ...props }: Props) {
+  return (
+    <View
+      className={`bg-surface border border-border rounded-xl p-4 ${className}`}
+      {...props}
+    >
+      {children}
+    </View>
+  );
+}
+```
+
+### Why we did it
+
+Card styling was one of the most repeated visual patterns in the student flow.
+
+It appeared in:
+- academic year rows
+- subject rows
+- course rows
+- course detail content blocks
+- lesson row containers
+
+So extracting `Card` immediately reduced duplication across the app.
+
+### Why this matters
+
+This is one of the clearest wins of the feature.
+
+When card styling changes later, the update can happen once rather than across every screen manually.
+
+That gives the app a stronger shared visual language with less code noise.
+
+---
+
+## Step 8 — Create shared button primitives
+
+### What we did
+
+We created:
+- `PrimaryButton.tsx`
+- `SecondaryButton.tsx`
+
+Example:
+
+```tsx
+// components/ui/PrimaryButton.tsx
+import { TouchableOpacity, type TouchableOpacityProps } from "react-native";
+import { AppText } from "./AppText";
+
+type Props = TouchableOpacityProps & {
+  label: string;
+  className?: string;
+};
+
+export function PrimaryButton({
+  label,
+  className = "",
+  ...props
+}: Props) {
+  return (
+    <TouchableOpacity
+      className={`bg-accent rounded-md px-4 py-3 items-center justify-center active:opacity-70 ${className}`}
+      accessibilityRole="button"
+      {...props}
+    >
+      <AppText variant="button" className="text-white">
+        {label}
+      </AppText>
+    </TouchableOpacity>
+  );
+}
+```
+
+```tsx
+// components/ui/SecondaryButton.tsx
+import { TouchableOpacity, type TouchableOpacityProps } from "react-native";
+import { AppText } from "./AppText";
+
+type Props = TouchableOpacityProps & {
+  label: string;
+  className?: string;
+};
+
+export function SecondaryButton({
+  label,
+  className = "",
+  ...props
+}: Props) {
+  return (
+    <TouchableOpacity
+      className={`bg-surface border border-border rounded-md px-4 py-3 items-center justify-center active:opacity-70 ${className}`}
+      accessibilityRole="button"
+      {...props}
+    >
+      <AppText variant="button" className="text-text-primary">
+        {label}
+      </AppText>
+    </TouchableOpacity>
+  );
+}
+```
+
+### Why we did it
+
+Buttons are one of the first components that become inconsistent if they are left inline in screen files.
+
+This feature already had at least one clear primary-action pattern in the course-detail screen, so extracting button components was justified.
+
+### Why this matters
+
+These components stay intentionally simple:
+- no icon system yet
+- no loading-button state yet
+- no size variants yet
+- no theme engine yet
+
+That restraint is important.
+
+The project needed:
+- reusable buttons
+- not a full component library
+
+---
+
+## Step 9 — Create `StatusBadge` for preview / locked / status states
+
+### What we did
+
+We created:
+
+```tsx
+// components/ui/StatusBadge.tsx
+import { View } from "react-native";
+import { AppText } from "./AppText";
+
+type Variant = "preview" | "locked" | "success" | "warning";
+
+const styles: Record<
+  Variant,
+  { container: string; text: string }
+> = {
+  preview: {
+    container: "bg-accent-light",
+    text: "text-accent",
+  },
+  locked: {
+    container: "bg-surface-secondary",
+    text: "text-locked",
+  },
+  success: {
+    container: "bg-success-light",
+    text: "text-success",
+  },
+  warning: {
+    container: "bg-orange-100",
+    text: "text-warning",
+  },
+};
+
+type Props = {
+  label: string;
+  variant: Variant;
+};
+
+export function StatusBadge({ label, variant }: Props) {
+  return (
+    <View className={`px-2 py-1 rounded-full ${styles[variant].container}`}>
+      <AppText variant="caption" className={styles[variant].text}>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+```
+
+### Why we did it
+
+Feature 05 already introduced the need for preview vs locked lesson states.
+
+Those states had:
+- specific colors
+- repeated shape styling
+- short translated labels
+
+So `StatusBadge` became the right place to centralize that state styling.
+
+### Why this matters
+
+This is a strong example of extracting a **semantic** component, not just a visual one.
+
+The badge does not just look reusable.
+It represents reusable product states such as:
+- preview
+- locked
+- success
+- warning
+
+That makes future screens clearer and more consistent.
+
+---
+
+## Step 10 — Create shared loading and empty-state components
+
+### What we did
+
+We created:
+- `LoadingScreen.tsx`
+- `EmptyState.tsx`
+
+Example:
+
+```tsx
+// components/ui/LoadingScreen.tsx
+import { ActivityIndicator, View } from "react-native";
+import { Colors } from "../../constants/colors";
+
+export function LoadingScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-background">
+      <ActivityIndicator size="large" color={Colors.accent} />
+    </View>
+  );
+}
+```
+
+```tsx
+// components/ui/EmptyState.tsx
+import { View } from "react-native";
+import { AppText } from "./AppText";
+
+type Props = {
+  title?: string;
+  description: string;
+  className?: string;
+};
+
+export function EmptyState({
+  title,
+  description,
+  className = "",
+}: Props) {
+  return (
+    <View className={`flex-1 items-center justify-center px-6 ${className}`}>
+      {title ? (
+        <AppText variant="title" className="text-center mb-2">
+          {title}
+        </AppText>
+      ) : null}
+      <AppText variant="secondary" className="text-center">
+        {description}
+      </AppText>
+    </View>
+  );
+}
+```
+
+### Why we did it
+
+Loading and empty/error states are some of the easiest places for duplication to spread.
+
+Earlier screens already repeated:
+- centered wrapper layout
+- background color
+- spacing
+- text styling
+
+So these two components removed repetition and made screen files easier to read.
+
+### Why this matters
+
+This is especially useful in mobile apps because loading and empty states appear frequently in data-driven screens.
+
+If every screen builds them differently:
+- the app feels inconsistent
+- the code grows noisier
+- small UI bugs become easier to introduce
+
+---
+
+## Step 11 — Create `ListRow` as a basic reusable row pattern
+
+### What we did
+
+We created:
+
+```tsx
+// components/ui/ListRow.tsx
+import { TouchableOpacity, View, type TouchableOpacityProps } from "react-native";
+import { Card } from "./Card";
+
+type Props = TouchableOpacityProps & {
+  disabled?: boolean;
+  className?: string;
+};
+
+export function ListRow({
+  children,
+  disabled = false,
+  className = "",
+  ...props
+}: Props) {
+  return (
+    <TouchableOpacity
+      className={`mb-3 active:opacity-70 ${disabled ? "opacity-60" : ""}`}
+      disabled={disabled}
+      {...props}
+    >
+      <Card className={className}>
+        <View className="flex-row items-center justify-between">{children}</View>
+      </Card>
+    </TouchableOpacity>
+  );
+}
+```
+
+### Why we did it
+
+The app already had multiple tappable row-like patterns, especially in:
+- list cards
+- lesson rows
+- navigable item blocks
+
+We did not want to create a large and over-configured row abstraction.
+
+But a small reusable row primitive was justified because it supports current and near-next screens without over-engineering.
+
+### Why this matters
+
+This is a good example of the design rule for the feature:
+
+**build only what current and near-next screens need**
+
+`ListRow` is helpful because:
+- it centralizes touch feedback
+- it centralizes disabled-state opacity
+- it reuses `Card`
+- it provides a predictable row shell
+
+but it still stays simple.
+
+---
+
+## Step 12 — Add the `components/ui/index.ts` barrel export
+
+### What we did
+
+We created:
+
+```ts
+export * from "./AppText";
+export * from "./ScreenContainer";
+export * from "./Card";
+export * from "./PrimaryButton";
+export * from "./SecondaryButton";
+export * from "./StatusBadge";
+export * from "./EmptyState";
+export * from "./LoadingScreen";
+export * from "./ListRow";
+```
+
+### Why we did it
+
+This gave the project one clean import path for shared UI primitives.
+
+Instead of importing every component through long relative paths, screens can now import from:
+
+```ts
+../../components/ui
+```
+
+or the appropriate relative equivalent.
+
+### Why this matters
+
+This is a small DX improvement, but it makes the shared layer feel like a real foundation instead of a pile of unrelated files.
+
+That also makes future feature work smoother.
+
+---
+
+## Step 13 — Migrate the existing student screens to the shared foundations
+
+### What we did
+
+We updated the already-built student screens so they would use the new shared UI layer.
+
+The main screens updated were:
+- `app/(student)/index.tsx`
+- `app/(student)/[yearId]/index.tsx`
+- `app/(student)/[yearId]/[subjectId]/index.tsx`
+- `app/(student)/course/[courseId].tsx`
+
+We replaced repeated inline UI patterns with:
+- `ScreenContainer`
+- `AppText`
+- `Card`
+- `LoadingScreen`
+- `EmptyState`
+- `PrimaryButton`
+- `StatusBadge`
+- `ListRow`
+
+### Why we did it
+
+This step is what makes Feature 06 real.
+
+If the shared components exist but existing screens do not adopt them, then the feature is only scaffolding, not actual implementation progress.
+
+So the migration step was essential.
+
+### Why this matters
+
+This is the moment where the app stops being:
+- a few styled screens
+
+and becomes:
+- a screen set built on reusable UI foundations
+
+That is a meaningful engineering shift.
+
+---
+
+## Step 14 — Keep Arabic-first and RTL-safe rules intact
+
+### What we did
+
+While creating the shared UI components and migrating screens, we kept the Arabic-first rule active:
+- visible UI text still comes from translation keys
+- no screen/component text defaults were introduced as hardcoded UI copy
+- no left/right-specific spacing habits were introduced into the shared patterns
+- layouts remained usable for Arabic-first rendering
+
+We also preserved the existing localization flow rather than bypassing it.
+
+### Why we did it
+
+A design system can accidentally break localization discipline if it starts embedding visible strings inside shared components.
+
+That would be especially harmful here because the project already established:
+- Arabic as default
+- English as secondary
+- translation keys for visible UI text
+- RTL awareness as a permanent requirement
+
+So Feature 06 had to strengthen those rules, not weaken them.
+
+### Why this matters
+
+A shared UI foundation is only valuable if it is compatible with the app’s core product rules.
+
+For EduStream Mobile, that means:
+- Arabic-first
+- translation-key-driven
+- RTL-safe by default
+
+If the shared layer ignores those, it becomes technical debt instead of a foundation.
+
+---
+
+## Step 15 — Example migrated code for the Course Detail screen
+
+### What we did
+
+A representative result of this feature was the migration of the Course Detail screen to the shared UI layer.
+
+Example:
+
+```tsx
+import { Alert, FlatList, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+
+import { getCourseDetail, getLessonsByCourse } from "../../../lib/mock-data/student";
+import type { CourseDetail, Lesson } from "../../../lib/types";
+import { t, isRTL } from "../../../lib/i18n";
+import {
+  AppText,
+  Card,
+  EmptyState,
+  ListRow,
+  LoadingScreen,
+  PrimaryButton,
+  ScreenContainer,
+  StatusBadge,
+} from "../../../components/ui";
+import { spacing } from "../../../constants/design";
+
+function LessonItem({ lesson }: { lesson: Lesson }) {
+  const handlePress = () => {
+    if (lesson.isPreview) {
+      router.push(`/(student)/watch/${lesson.id}`);
+      return;
+    }
+
+    Alert.alert(
+      t("student.lesson_locked_title"),
+      t("student.lesson_locked_message")
+    );
+  };
+
+  return (
+    <ListRow onPress={handlePress} disabled={!lesson.isPreview}>
+      <View className="flex-1">
+        <AppText variant="body">{lesson.title}</AppText>
+
+        <AppText variant="muted" className="mt-1">
+          {t("student.lesson_number")} {lesson.orderIndex}
+        </AppText>
+      </View>
+
+      <StatusBadge
+        variant={lesson.isPreview ? "preview" : "locked"}
+        label={
+          lesson.isPreview
+            ? t("student.badge_free_preview")
+            : t("student.badge_locked")
+        }
+      />
+    </ListRow>
+  );
+}
+
+export default function CourseDetailScreen() {
+  const { courseId } = useLocalSearchParams<{ courseId: string }>();
+  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [courseData, lessonData] = await Promise.all([
+          getCourseDetail(courseId),
+          getLessonsByCourse(courseId),
+        ]);
+
+        if (!mounted) return;
+        setCourse(courseData);
+        setLessons(lessonData);
+      } catch {
+        if (mounted) setError(t("student.error_load_course"));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [courseId]);
+
+  if (loading) return <LoadingScreen />;
+  if (error || !course) {
+    return <EmptyState description={error || t("student.error_load_course")} />;
+  }
+
+  return (
+    <ScreenContainer>
+      <FlatList
+        data={lessons}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: spacing.lg }}
+        ListHeaderComponent={
+          <View className="mb-4">
+            <Card>
+              <AppText variant="title">{course.title}</AppText>
+
+              <AppText variant="secondary" className="mt-2">
+                {t("student.by_teacher")} {course.teacherName}
+              </AppText>
+
+              <AppText variant="secondary" className="mt-3">
+                {course.description}
+              </AppText>
+
+              <AppText variant="price" className="mt-4">
+                {course.price.toLocaleString(isRTL() ? "ar-SA" : "en-US")}{" "}
+                {t("student.price_suffix")}
+              </AppText>
+
+              <PrimaryButton
+                className="mt-4"
+                label={t("student.enroll_button")}
+                onPress={() =>
+                  Alert.alert(
+                    t("student.enroll_button"),
+                    t("student.mock_action_not_ready")
+                  )
+                }
+              />
+            </Card>
+
+            <AppText variant="title" className="mt-4 mb-3">
+              {t("student.lessons_header")}
+            </AppText>
+          </View>
+        }
+        renderItem={({ item }) => <LessonItem lesson={item} />}
+        ListEmptyComponent={
+          <EmptyState description={t("student.no_lessons")} />
+        }
+      />
+    </ScreenContainer>
+  );
+}
+```
+
+### Why we did it
+
+This screen was a strong test case because it already contained:
+- card sections
+- list rows
+- lesson badges
+- button styling
+- loading/error/empty states
+- Arabic-aware text
+
+So if the shared design foundation worked well here, it would be strong enough for the next features too.
+
+---
+
+## Problems encountered in Feature 06
+
+### Problem 1 — Repeated UI patterns existed, but not all of them were worth abstracting
+
+Some repeated patterns were obvious candidates:
+- cards
+- text variants
+- loading/empty states
+- badges
+- buttons
+
+But not every repeated JSX structure should become a reusable component.
+
+### Why this mattered
+
+If the feature extracted too much:
+- components would become overly generic
+- props would become messy
+- the UI layer would become harder to understand than the original screen code
+
+So the design system had to stay intentionally small.
+
+### Problem 2 — Shared components can accidentally introduce hardcoded text
+
+A common convenience mistake is to give components default text like:
+- “Empty”
+- “Try again”
+- “Submit”
+
+That would break the app’s translation discipline.
+
+### Why this mattered
+
+The project already established a strict rule:
+all visible UI text must come from translation keys.
+
+So the shared components had to remain presentational and accept labels as props instead of inventing their own UI copy.
+
+### Problem 3 — RTL safety can be weakened by component design
+
+A component can look reusable and still be LTR-biased if it assumes:
+- left-aligned icon spacing
+- left-only margin habits
+- rigid row composition that does not respect Arabic layout balance
+
+### Why this mattered
+
+Feature 06 was not only about visual reuse.
+It also had to make reuse **safe** for Arabic-first UI work.
+
+### Problem 4 — Existing screens still needed migration work
+
+The shared components alone were not enough.
+
+The already-built student screens had to be updated so the feature produced visible value now, not just “future usefulness.”
+
+### Why this mattered
+
+Without the migration step:
+- duplication would remain
+- the feature would be incomplete
+- next features would still be tempted to copy old screen patterns
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Extract only the small set of patterns already proven useful
+
+We extracted only the patterns that:
+- already existed in multiple places
+- had clear visual consistency needs
+- were likely to be reused again soon
+
+That kept the shared foundation simple.
+
+### Solution 2 — Keep components presentational and pass labels from the screen
+
+Components such as:
+- `PrimaryButton`
+- `SecondaryButton`
+- `StatusBadge`
+- `EmptyState`
+
+accept text through props rather than defining UI copy internally.
+
+That preserved the translation-key rule.
+
+### Solution 3 — Avoid directional left/right assumptions in shared patterns
+
+We kept layouts simple and row composition neutral so the shared primitives would remain usable in RTL.
+
+That makes the default path safer for future Arabic-first development.
+
+### Solution 4 — Migrate the existing student flow immediately
+
+We updated the already-built student screens to use the shared layer now.
+
+That made Feature 06 an active UI refactor, not passive setup.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — A mobile design system should start smaller than many web design systems
+
+A web engineer may be tempted to create:
+- full variant systems
+- slot-based primitives
+- deep composition APIs
+- a large token infrastructure
+
+But early React Native feature work often benefits more from:
+- a few stable primitives
+- simple prop APIs
+- readable route files
+- quick reuse across screens
+
+That is what this feature did.
+
+## Lesson 2 — Shared constants still matter even when using utility classes
+
+In web Tailwind, utility classes can cover a huge portion of design-system needs directly in markup.
+
+In React Native, some layout values still appear in JavaScript object props and component APIs, so shared numeric constants remain useful earlier.
+
+This is one of the practical differences between DOM styling and React Native UI work.
+
+## Lesson 3 — Text primitives are especially valuable in React Native
+
+In web apps, browser defaults and semantic HTML can do more typographic work for free.
+
+In React Native, repeated `Text` styling becomes noisy quickly.
+
+So a small `AppText` primitive often provides value sooner than a web engineer might expect.
+
+## Lesson 4 — Presentational reuse must not fight localization
+
+In multilingual mobile apps, reusable components are only truly reusable if they:
+- do not hardcode visible strings
+- do not assume LTR layout
+- do not make language-specific spacing assumptions
+
+That becomes even more important in Arabic-first apps.
+
+## Lesson 5 — A feature like this is infrastructure, but it should still create visible app improvement
+
+A common trap is to build UI infrastructure that only helps “later.”
+
+Good frontend infrastructure should also improve the current app immediately.
+
+This feature did that by migrating the existing screens right away.
+
+---
+
+## Discussion notes for Feature 06
+
+### Why did we not build a larger theme system?
+
+Because the app did not need it yet.
+
+The current project phase needed:
+- practical reuse
+- consistent styling
+- shared building blocks
+
+It did **not** yet need:
+- runtime theme switching
+- dark mode support
+- semantic token layers across many product surfaces
+- advanced compound component patterns
+
+So the right engineering move was to build the smallest useful foundation.
+
+### Why not create dozens of text and button variants now?
+
+Because too many variants early in a project usually signal uncertainty, not maturity.
+
+A smaller set of trusted variants is better than a larger set of barely differentiated ones.
+
+### Why did we update existing screens instead of only creating the new components?
+
+Because a design foundation is only real when the app actually uses it.
+
+If current screens still duplicate their styling, then the feature has not yet delivered its intended value.
+
+### What is the main React Native lesson here?
+
+A shared mobile design foundation should be:
+- small
+- practical
+- readable
+- localization-safe
+- RTL-safe
+- immediately useful to current screens
+
+Not every app needs a large design system early.
+But every growing app benefits from a small reliable one.
+
+---
+
+## Final output of Feature 06
+
+At the end of this feature, the project had:
+- a shared `constants/design.ts` file
+- a new `components/ui` folder for reusable primitives
+- shared typography through `AppText`
+- a shared page wrapper through `ScreenContainer`
+- a shared surface container through `Card`
+- shared `PrimaryButton` and `SecondaryButton`
+- shared `StatusBadge`
+- shared `LoadingScreen`
+- shared `EmptyState`
+- a basic reusable `ListRow` pattern
+- migrated student screens using the shared foundation
+- Arabic-first behavior preserved
+- translation-key discipline preserved
+- RTL-safe implementation habits preserved
+- a cleaner reusable UI base for the next features
+
+---
+
+## Completion checklist for Feature 06
+
+Feature 06 is complete when all of these are true:
+
+- `constants/design.ts` exists
+- `components/ui/` exists
+- `AppText` exists and is used in student screens
+- `ScreenContainer` exists
+- `Card` exists and replaces duplicated card styling where appropriate
+- `PrimaryButton` exists
+- `SecondaryButton` exists
+- `StatusBadge` exists
+- `LoadingScreen` exists and replaces duplicated loading layouts
+- `EmptyState` exists and replaces duplicated empty/error layouts where appropriate
+- `ListRow` exists if used for lesson or item rows
+- Academic Years still works
+- Subjects still works
+- Courses still works
+- Course Detail still works
+- preview / locked lesson states still work
+- Arabic is still the default language
+- English still works after switching
+- visible UI text still comes from translation keys
+- no new hardcoded visible strings were introduced in the shared components
+- shared UI patterns are now ready for the next feature
+
+---
+
+## Exact commands used
+
+```bash
+mkdir -p components/ui
+
+touch constants/design.ts
+
+touch components/ui/AppText.tsx
+touch components/ui/ScreenContainer.tsx
+touch components/ui/Card.tsx
+touch components/ui/PrimaryButton.tsx
+touch components/ui/SecondaryButton.tsx
+touch components/ui/StatusBadge.tsx
+touch components/ui/EmptyState.tsx
+touch components/ui/LoadingScreen.tsx
+touch components/ui/ListRow.tsx
+touch components/ui/index.ts
+```
+
+Run the app after implementation:
+
+```bash
+npx expo start --clear
+```
+
+Optional TypeScript verification:
+
+```bash
+npx tsc --noEmit
+```
+
+Optional hardcoded-string / hardcoded-color sanity checks:
+
+```bash
+grep -R "#7C5CFC" app components
+grep -R "ActivityIndicator" app components
+```
+
+---
+
+## Official references
+
+These were the most relevant official references for this feature:
+
+- NativeWind docs: [https://www.nativewind.dev/docs/getting-started/installation](https://www.nativewind.dev/docs/getting-started/installation)
+- Expo Router docs: [https://docs.expo.dev/router/navigating-pages/](https://docs.expo.dev/router/navigating-pages/)
+- React Native `FlatList` docs: [https://reactnative.dev/docs/flatlist](https://reactnative.dev/docs/flatlist)
+- React Native `Alert` docs: [https://reactnative.dev/docs/alert](https://reactnative.dev/docs/alert)
+- React Native layout props including logical spacing: [https://reactnative.dev/docs/layout-props#marginstart](https://reactnative.dev/docs/layout-props#marginstart)
+
+One important caution:
+
+for Arabic-first mobile UI, a shared design foundation is not only about visual consistency.
+It must also preserve:
+- translation-key discipline
+- RTL-safe layout choices
+- reusable patterns that do not assume English-first structure
+
+---
