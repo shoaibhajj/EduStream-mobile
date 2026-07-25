@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 09 complete — The student subject/course browsing flow is now polished and connected from the student home experience through academic year, subject, course list, and course detail using the mock data layer only. Arabic remains the default experience, RTL was rechecked after the browsing refinements, English still works for the same flow, and local verification passed after the nested Expo Router header cleanup and safe-area handling adjustments.
+Feature 10 complete — Course Detail and Lessons screens are now polished and fully connected. The course detail screen shows a thumbnail placeholder, enrollment status badge (confirmed/pending/none), lesson count, price, and enroll button with mock Alert feedback. The lesson list correctly distinguishes preview vs locked lessons with icons, badges, and opacity. Tapping a preview lesson navigates to a refined watch screen that loads lesson metadata (title, order, duration) from the mock data layer. Tapping a locked lesson triggers a descriptive Alert with no navigation. The watch screen uses AppText throughout, shows lesson metadata instead of a raw ID, and includes a back button. All strings use translation keys. Arabic is the default experience, RTL was visually confirmed, and English was confirmed working. `npx tsc --noEmit` and `npx expo start --clear` both passed after all changes.
 
 
 ## Next Up
-Feature 10 — Build Course Detail and Lessons Screens
+Feature 11 — Build Teacher Home Screen
 
 
 ## Build Progress
@@ -22,6 +22,7 @@ Feature 10 — Build Course Detail and Lessons Screens
 - 07 — Create Mock Data Layer
 - 08 — Build Student Home Screen
 - 09 — Build Subject/Course Browsing Screens
+- 10 — Build Course Detail and Lessons Screens
 
 
 ### In Progress
@@ -29,7 +30,6 @@ Feature 10 — Build Course Detail and Lessons Screens
 
 
 ### Not Started
-- 10 — Build Course Detail and Lessons Screens
 - 11 — Build Teacher Home Screen
 - 12 — Build Teacher Course Management UI
 - 13 — Build Profile and Payment Info Screens
@@ -105,6 +105,16 @@ Feature 10 — Build Course Detail and Lessons Screens
 - Confirmed the student home greeting no longer renders under the device notch/camera area after applying the safe-area wrapper.
 - Verified local flow works from Home → Browse → Academic Year → Subject → Course List → Course Detail in Arabic first, then English.
 - Confirmed `npx tsc --noEmit` still passes after the browsing-flow refinements and navigation header cleanup.
+- Refined `app/student-course/[courseId].tsx` for Feature 10: added thumbnail placeholder area, enrollment status display using a new `EnrollmentBadge` component, lesson count summary in the header, and an enroll button that shows a mock Alert confirmation and hides itself when already enrolled or pending.
+- Added `getEnrollmentStatus()` helper to `lib/mock-data/student.ts` — returns `"confirmed" | "pending" | "none"` using existing enrollment data, shaped for future Supabase swap.
+- Updated the locked-lesson Alert to use descriptive `locked_alert_title` and `locked_alert_msg` keys that explain enrollment is required.
+- Refined `app/student-watch/[lessonId].tsx`: replaced all raw `<Text>` with `<AppText>`, loaded lesson metadata via `getLessonById()` from the mock data layer, and now displays lesson title, order index, and duration instead of a raw lesson ID.
+- Added a back button to the watch screen via `router.back()` for screens where the native header is not visible.
+- Updated `app/_layout.tsx` to enable `headerShown: true` on the `student-course` and `student-watch` routes so native back-navigation headers appear when entering the course detail and watch screens from the browse flow.
+- Added 9 new translation keys to both `lib/i18n/ar.ts` and `lib/i18n/en.ts` covering enrollment status badges, enroll alert feedback, locked-lesson alert copy, and watch screen metadata labels.
+- Confirmed Arabic remains the default experience across all refined screens; RTL layout visually confirmed on course detail and watch.
+- Confirmed English still works for the same full flow after all Feature 10 changes.
+- Confirmed `npx tsc --noEmit` passes clean and `npx expo start --clear` starts without errors after all Feature 10 updates.
 
 
 ## Architecture Decisions
@@ -126,6 +136,8 @@ Feature 10 — Build Course Detail and Lessons Screens
 - Dynamic navigation should follow Expo Router typed-route-safe patterns for parameterized screens when string interpolation causes route typing conflicts.
 - Parent navigator headers should stay hidden when a nested child navigator is responsible for the visible page header, to avoid duplicate headers or leaked route-group labels.
 - `ScreenContainer` should be the default outer wrapper for headerless full-screen pages that need safe-area protection; screens with visible native headers should only add safe-area edges when visually necessary.
+- Enrollment status query helpers belong in the mock data layer (`lib/mock-data/student.ts`), not inside screen components, so the status check is a single-line import that can later be replaced by a Supabase RLS query without touching screen logic.
+- The `student-course` and `student-watch` top-level dynamic routes use `headerShown: true` in the root stack so students always have a visible native back button when navigating into the detail/watch flow from anywhere in the app.
 
 
 ## Notes / Risks
@@ -142,3 +154,5 @@ Feature 10 — Build Course Detail and Lessons Screens
 - Expo Router route restructuring can easily create confusion between route groups, visible tabs, and standalone detail routes; future navigation changes should keep top-level destinations and pushed detail screens clearly separated.
 - Dynamic routes should be rechecked with TypeScript after any file move so generated typed-route definitions stay aligned with the current app tree.
 - Safe-area handling now depends on whether a screen owns its own visible header or relies on a headerless layout; future screens should choose wrappers accordingly to avoid either notch overlap or double top spacing.
+- The enroll button mock Alert is a UI-only placeholder. When the backend phase begins, this will be replaced by an actual enrollment insert into Supabase with proper loading and error states.
+- The thumbnail placeholder area on the course detail screen uses an emoji inside a neutral box. This will be replaced with a real `<Image>` component reading from `thumbnailUrl` once course thumbnail assets are introduced.

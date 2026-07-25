@@ -6811,3 +6811,1076 @@ Feature 09 is complete when all of these are true:
 - Expo `react-native-safe-area-context` docs: https://docs.expo.dev/versions/latest/sdk/safe-area-context/
 - `react-native-safe-area-context` SafeAreaView API: https://appandflow.github.io/react-native-safe-area-context/api/safe-area-view/
 ```
+
+
+-----
+md
+
+# Feature 10 Build Course Detail and Lessons Screens
+
+## What this feature does
+
+Feature 10 takes the already-existing course detail and watch flow and refines it into a more complete student experience during the mock-data-first phase. The feature focuses only on the student course detail, lesson list, preview access, locked lesson behavior, and watch-entry flow. It does not add any backend integration, teacher functionality, payment flow, or real video playback yet. [file:20]
+
+The final result is a polished student path where the user can:
+- open a course from the browse flow
+- see a stronger course detail screen
+- understand which lessons are previewable and which are locked
+- tap a preview lesson and enter the watch placeholder
+- tap a locked lesson and get blocked through mock-only logic
+- view the flow in Arabic first, then confirm it still works in English [file:20]
+
+This feature also continues the project rules introduced earlier:
+- Arabic is the default experience
+- all visible text must come from translation files
+- RTL safety must be preserved
+- shared design primitives must be reused
+- data must come from the mock data layer, not hardcoded screen arrays [file:20]
+
+---
+
+## Why this feature matters
+
+A course card in a browse list is only useful if the student can continue into a believable learning flow. In EduStream, that means the student must be able to move from:
+- Home
+- Browse
+- Academic Year
+- Subject
+- Course List
+- Course Detail
+- Lesson interaction
+- Watch placeholder [file:20]
+
+Before this feature refinement, the project already had a basic course detail screen and a basic watch placeholder from the earlier course-detail feature. But the flow still needed product polish:
+- enrollment state was not clearly shown
+- the enroll button had no visible mock feedback
+- the watch screen only showed a raw lesson ID
+- the course detail screen needed stronger summary structure
+- the flow needed to feel more intentional as a student learning path [file:20]
+
+For a React and Next.js engineer, this is an important mobile lesson. A screen can already exist and still not feel product-ready. In mobile work, polishing a route often means improving:
+- hierarchy
+- metadata visibility
+- navigation confidence
+- state feedback
+- blocked behavior
+- screen-to-screen continuity [file:20]
+
+---
+
+## Original implementation plan
+
+Before changing anything, we followed the repo instruction to re-read the current source-of-truth documents and use the tracker numbering exactly as written. The working implementation plan for Feature 10 became:
+
+1. Re-read the repo docs and current tracker order.
+2. Inspect the existing course detail and watch flow already in the repo.
+3. Keep the work mock-data-first only.
+4. Add any missing helper logic to the mock data layer instead of screen files.
+5. Refine the course detail screen with clearer metadata and enrollment-state handling.
+6. Refine the lesson list so preview vs locked behavior feels clear.
+7. Refine the watch screen so it loads lesson metadata instead of showing only a raw ID.
+8. Keep all visible UI text inside translation files.
+9. Re-check Arabic first, then English.
+10. Confirm TypeScript and Expo still run cleanly. [file:20]
+
+This feature looked small on paper, but in practice it required coordinated work across:
+- route screens
+- root stack behavior
+- translation files
+- mock data helpers
+- design-system reuse
+- mobile interaction feedback [file:20]
+
+---
+
+## Step 1 Re-read the repo documents before implementation
+
+### What we did
+
+Before making changes, we re-read:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md` [file:20]
+
+We also treated the current `mobile-progress-tracker.md` numbering as the only source of truth, which meant this work had to be documented and implemented as **Feature 10**, not using any older numbering memory. [file:20]
+
+### Why we did it
+
+This prevented two common mistakes:
+1. implementing the right UI work under the wrong feature number
+2. accidentally drifting outside the current phase into backend or unrelated app areas [file:20]
+
+Because the project had already inserted the Arabic-first localization feature earlier in the roadmap, relying on old numbering would have created documentation drift again. Re-reading the tracker protected both implementation accuracy and repo history consistency. [file:20]
+
+### Engineering note
+
+This step also re-confirmed the current non-negotiable rules:
+- Arabic-first
+- translation keys only for visible text
+- mock-data-first
+- no Supabase
+- no Clerk
+- no real backend logic yet
+- shared design primitives must be reused [file:20]
+
+---
+
+## Step 2 Inspect the existing course detail and watch flow before changing it
+
+### What we did
+
+We reviewed the existing student flow files:
+- `app/student-course/[courseId].tsx`
+- `app/student-watch/[lessonId].tsx`
+- `lib/mock-data/student.ts`
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+- `app/_layout.tsx` [file:20]
+
+The important finding was that the app already had:
+- a real course detail screen
+- a real lesson list
+- preview vs locked visual behavior
+- preview navigation into watch
+- a basic watch placeholder route
+- lesson retrieval helpers already present in the mock data layer [file:20]
+
+### Why we did it
+
+This feature was not a greenfield build. It was a refinement feature. That matters, because the right question was not “how do we build course detail from zero?” but rather “what is still missing for this to feel complete and polished?” [file:20]
+
+That change in mindset helped keep the scope correct. Instead of rebuilding the flow, we refined the weakest pieces:
+- enrollment-state visibility
+- better watch-screen metadata
+- more useful blocked behavior
+- stronger screen structure and UX feedback [file:20]
+
+### Engineering note
+
+For a web engineer, this is similar to reviewing an existing page flow before deciding whether the next step is:
+- new architecture
+- component extraction
+- or just better product-level polish
+
+In this case, the route flow already existed, so the right move was targeted refinement rather than structural replacement. [file:20]
+
+---
+
+## Step 3 Keep the feature fully inside the mock-data-first phase
+
+### What we did
+
+We kept the entire feature inside the existing mock layer and did not add:
+- Supabase queries
+- Clerk auth checks
+- real enrollment mutation logic
+- real media playback
+- remote thumbnail loading [file:20]
+
+Instead, we used the existing mock helpers and added only one small missing query-style helper for enrollment status inside:
+- `lib/mock-data/student.ts` [file:20]
+
+### Why we did it
+
+The project instruction for this phase is very clear: data should remain mock-driven, and if a screen needs helper logic, that logic should live in the mock data layer rather than inside the screen component. [file:20]
+
+This is a healthy architecture habit. It prevents screen files from becoming mini data layers with embedded business rules. It also keeps the future backend swap easier, because UI code depends on imported query helpers rather than local ad hoc logic. [file:20]
+
+### React vs React Native note
+
+A React or Next.js engineer may be tempted to keep “small temporary logic” inside a screen component. That often feels harmless in short-lived web prototypes. In a mobile codebase with multiple nested flows, that habit becomes expensive faster because:
+- screens often stay around longer
+- route files are user-facing boundaries
+- repeated data decisions spread quickly across screens [file:20]
+
+---
+
+## Step 4 Add the missing enrollment-status helper to the mock data layer
+
+### What we did
+
+We added a small helper to `lib/mock-data/student.ts` so the course detail screen could ask for the current student’s mock enrollment status in a single clean call.
+
+### Exact code we added
+
+```ts
+export type EnrollmentStatus = "confirmed" | "pending" | "none";
+
+/**
+ * Returns the enrollment status for the current mock student on a given course.
+ * Maps to what will eventually be an RLS-protected Supabase query.
+ */
+export async function getEnrollmentStatus(
+  courseId: string
+): Promise<EnrollmentStatus> {
+  const enrollment = await getMyEnrollmentForCourse(courseId);
+  if (!enrollment) return "none";
+  return enrollment.status === "confirmed" ? "confirmed" : "pending";
+}
+```
+
+### Why we did it
+
+The course detail screen needed to know whether the current student is:
+- already enrolled
+- pending review
+- not enrolled [file:20]
+
+That is exactly the kind of query-shaped logic that belongs in the mock data layer. It keeps the screen simpler and closer to the future real-backend shape. [file:20]
+
+### Why this matters
+
+This is the same architectural instinct you would use in a web app when deciding not to bury API result interpretation inside a page component. Even during the mock-data phase, the shape of the data boundary matters. [file:20]
+
+---
+
+## Step 5 Add the missing translation keys before finalizing the UI
+
+### What we did
+
+We added the new visible strings needed for Feature 10 to both translation files:
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts` [file:20]
+
+These keys covered:
+- enrollment status badges
+- enroll-button success Alert copy
+- locked-lesson Alert copy
+- watch-screen metadata labels [file:20]
+
+### Exact Arabic code we added
+
+```ts
+course_lessons_count: "عدد الحصص",
+course_enrolled_badge: "مسجّل",
+course_pending_badge: "قيد المراجعة",
+course_not_enrolled: "غير مسجّل",
+enroll_success_title: "طلب التسجيل",
+enroll_success_msg: "تم إرسال طلبك بنجاح. سيتم مراجعته من قِبَل المعلم.",
+locked_alert_title: "الدرس مقفل",
+locked_alert_msg: "هذا الدرس يتطلب الاشتراك في الدورة. اضغط «طلب التسجيل» لإرسال طلبك.",
+watch_lesson_label: "الحصة",
+watch_lesson_order: "الترتيب",
+watch_placeholder_note: "سيكون مشغّل الفيديو متاحاً هنا.",
+```
+
+### Exact English code we added
+
+```ts
+course_lessons_count: "Lessons",
+course_enrolled_badge: "Enrolled",
+course_pending_badge: "Pending Review",
+course_not_enrolled: "Not Enrolled",
+enroll_success_title: "Enrollment Request",
+enroll_success_msg: "Your request has been sent successfully. The teacher will review it.",
+locked_alert_title: "Lesson Locked",
+locked_alert_msg: "This lesson requires course enrollment. Tap 'Request Enrollment' to submit your request.",
+watch_lesson_label: "Lesson",
+watch_lesson_order: "Order",
+watch_placeholder_note: "Video player will be available here.",
+```
+
+### Why we did it
+
+Feature 04 made localization a permanent implementation rule. That means no matter how small a feature seems, visible strings must enter the app through translation keys, not JSX literals. [file:20]
+
+### Why this matters
+
+This is especially important in mobile row and detail UIs because changing language affects:
+- badge width
+- row balance
+- metadata wrapping
+- screen density
+- spacing pressure in RTL layouts [file:20]
+
+So translation work is not only about language. It is also part of component design. [file:20]
+
+---
+
+## Step 6 Refine the course detail screen into a stronger student detail view
+
+### What we did
+
+We replaced the earlier course detail implementation with a more polished version in:
+- `app/student-course/[courseId].tsx` [file:20]
+
+The new screen still uses the same route and mock-driven data source, but it now adds:
+- a thumbnail placeholder area
+- enrollment-status badge support
+- lesson count summary
+- better enroll-button behavior
+- clearer locked-lesson Alert messaging
+- cleaner top-of-screen structure [file:20]
+
+### Exact code we used
+
+```tsx
+import { useEffect, useState } from "react";
+import { View, FlatList, TouchableOpacity, Alert } from "react-native";
+import {
+  AppText,
+  Card,
+  PrimaryButton,
+  StatusBadge,
+  LoadingScreen,
+  EmptyState,
+  ScreenContainer,
+} from "../../components/ui";
+import { Spacing } from "../../constants/design";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { t } from "../../lib/i18n";
+import {
+  getCourseDetail,
+  getLessonsByCourse,
+  getEnrollmentStatus,
+  type EnrollmentStatus,
+} from "../../lib/mock-data/student";
+import type { CourseDetail, Lesson } from "../../lib/types";
+
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "";
+  const mins = Math.floor(seconds / 60);
+  return `${mins} ${t("student.duration_minutes")}`;
+}
+
+function EnrollmentBadge({ status }: { status: EnrollmentStatus }) {
+  if (status === "confirmed")
+    return (
+      <StatusBadge
+        variant="confirmed"
+        label={t("student.course_enrolled_badge")}
+      />
+    );
+  if (status === "pending")
+    return (
+      <StatusBadge
+        variant="pending"
+        label={t("student.course_pending_badge")}
+      />
+    );
+  return null;
+}
+
+function LessonRow({
+  lesson,
+  onPress,
+}: {
+  lesson: Lesson;
+  onPress: (lesson: Lesson) => void;
+}) {
+  const isPreview = lesson.isPreview;
+
+  return (
+    <TouchableOpacity
+      className={`mb-3 active:opacity-70 ${isPreview ? "" : "opacity-60"}`}
+      onPress={() => onPress(lesson)}
+      accessibilityRole="button"
+      accessibilityLabel={lesson.title}
+      accessibilityHint={
+        isPreview
+          ? t("student.lesson_preview_hint")
+          : t("student.lesson_locked_hint")
+      }
+    >
+      <Card className="flex-row items-center">
+        <View
+          className={`w-9 h-9 rounded-full items-center justify-center me-3 ${
+            isPreview ? "bg-accent-light" : "bg-surface-secondary"
+          }`}
+        >
+          <AppText className={isPreview ? "text-accent" : "text-locked"}>
+            {isPreview ? "▶" : "🔒"}
+          </AppText>
+        </View>
+
+        <View className="flex-1">
+          <AppText variant={isPreview ? "body" : "muted"} numberOfLines={1}>
+            {lesson.title}
+          </AppText>
+          {lesson.durationSeconds !== null && (
+            <AppText variant="muted" className="mt-0.5">
+              {formatDuration(lesson.durationSeconds)}
+            </AppText>
+          )}
+        </View>
+
+        <View className="ms-2">
+          <StatusBadge
+            variant={isPreview ? "preview" : "locked"}
+            label={
+              isPreview
+                ? t("student.badge_free_preview")
+                : t("student.badge_locked")
+            }
+          />
+        </View>
+      </Card>
+    </TouchableOpacity>
+  );
+}
+
+export default function CourseDetailScreen() {
+  const { courseId } = useLocalSearchParams<{ courseId: string }>();
+  const router = useRouter();
+
+  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [enrollStatus, setEnrollStatus] = useState<EnrollmentStatus>("none");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [courseData, lessonData, status] = await Promise.all([
+          getCourseDetail(courseId),
+          getLessonsByCourse(courseId),
+          getEnrollmentStatus(courseId),
+        ]);
+        if (!courseData) {
+          setError(t("student.error_load_course"));
+          return;
+        }
+        setCourse(courseData);
+        setLessons(lessonData);
+        setEnrollStatus(status);
+      } catch (e) {
+        setError(t("student.error_load_course"));
+        console.error("[student-course/[courseId]] load failed", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [courseId]);
+
+  function handleLessonPress(lesson: Lesson) {
+    if (lesson.isPreview) {
+      router.push({
+        pathname: "/student-watch/[lessonId]",
+        params: { lessonId: lesson.id },
+      });
+    } else {
+      Alert.alert(
+        t("student.locked_alert_title"),
+        t("student.locked_alert_msg")
+      );
+    }
+  }
+
+  function handleEnrollPress() {
+    if (enrollStatus === "none") {
+      Alert.alert(
+        t("student.enroll_success_title"),
+        t("student.enroll_success_msg")
+      );
+    }
+  }
+
+  if (loading) return <LoadingScreen />;
+  if (error || !course)
+    return <EmptyState message={error ?? t("student.error_load_course")} />;
+
+  return (
+    <ScreenContainer>
+      <View className="flex-1 bg-background">
+        <FlatList
+          data={lessons}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: Spacing.base }}
+          ListHeaderComponent={
+            <View className="mb-6">
+              <View className="w-full h-44 rounded-2xl bg-surface-secondary items-center justify-center mb-4">
+                <AppText className="text-4xl">🎓</AppText>
+              </View>
+
+              <View className="flex-row items-start justify-between mb-1">
+                <AppText variant="sectionTitle" className="flex-1 me-2">
+                  {course.title}
+                </AppText>
+                <EnrollmentBadge status={enrollStatus} />
+              </View>
+
+              <AppText variant="muted" className="mb-3">
+                {t("student.by_teacher")}: {course.teacherName}
+              </AppText>
+
+              <AppText variant="secondary" className="mb-4 leading-5">
+                {course.description}
+              </AppText>
+
+              <AppText variant="muted" className="mb-4">
+                {lessons.length} {t("student.course_lessons_count")}
+              </AppText>
+
+              <View className="flex-row items-center justify-between mb-5">
+                <AppText variant="price">
+                  {course.price.toLocaleString("ar-SA")}{" "}
+                  {t("student.price_suffix")}
+                </AppText>
+                {enrollStatus === "none" && (
+                  <PrimaryButton
+                    label={t("student.enroll_button")}
+                    onPress={handleEnrollPress}
+                  />
+                )}
+              </View>
+
+              <AppText variant="sectionTitle" className="mb-3">
+                {t("student.lessons_header")}
+              </AppText>
+            </View>
+          }
+          ListEmptyComponent={<EmptyState message={t("student.no_lessons")} />}
+          renderItem={({ item }) => (
+            <LessonRow lesson={item} onPress={handleLessonPress} />
+          )}
+        />
+      </View>
+    </ScreenContainer>
+  );
+}
+```
+
+### Why we did it
+
+The earlier screen worked, but it still felt like a technical route rather than a polished learning detail screen. This refinement made the top of the screen communicate more clearly:
+- what course this is
+- who teaches it
+- how many lessons it includes
+- whether the student is already enrolled
+- whether the enroll CTA should still be available [file:20]
+
+### Why this matters
+
+This is a common mobile pattern: list-level cards show summary data, but detail screens need to immediately answer the user’s next questions without making them hunt through the UI. [file:20]
+
+---
+
+## Step 7 Keep preview and locked lesson behavior clear and intentional
+
+### What we did
+
+Inside the course detail screen, we kept the lesson-row interaction split very explicit:
+
+- preview lesson:
+  - show play symbol
+  - show preview badge
+  - allow navigation
+
+- locked lesson:
+  - show lock symbol
+  - show locked badge
+  - reduce opacity
+  - block navigation
+  - show native Alert [file:20]
+
+### Why we did it
+
+This makes the content-access rule visible before the user taps, and still understandable after the tap. That combination matters:
+- pre-tap clarity through icon, badge, and styling
+- post-tap clarity through a blocked Alert message [file:20]
+
+If the UI only blocks after tapping, the flow feels frustrating. If the UI only styles the item but gives no action feedback, the flow feels incomplete. Good mobile interaction design usually needs both. [file:20]
+
+### React vs React Native note
+
+In a web app, blocked access might often lead to:
+- disabled buttons
+- inline callouts
+- modal upsells
+- hover hints
+
+In React Native, `Alert.alert(...)` is a very natural lightweight pattern for this stage because it gives immediate native feedback without expanding scope into a full custom modal system. [file:20]
+
+---
+
+## Step 8 Refine the watch screen so it uses lesson metadata instead of a raw ID
+
+### What we did
+
+We replaced the earlier watch placeholder in:
+- `app/student-watch/[lessonId].tsx` [file:20]
+
+The previous version displayed a basic placeholder and the raw lesson ID. The new version:
+- loads lesson data from the mock data layer
+- uses `AppText` instead of raw `Text`
+- shows title, order, and duration
+- adds a clearer video placeholder area
+- keeps the screen as a deliberate placeholder for a future real player feature [file:20]
+
+### Exact code we used
+
+```tsx
+import { useEffect, useState } from "react";
+import { View, TouchableOpacity } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { t } from "../../lib/i18n";
+import { getLessonById } from "../../lib/mock-data/student";
+import { AppText, LoadingScreen, ScreenContainer } from "../../components/ui";
+import type { Lesson } from "../../lib/types";
+
+export default function WatchScreen() {
+  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
+  const router = useRouter();
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const data = await getLessonById(lessonId);
+      setLesson(data);
+      setLoading(false);
+    }
+    load();
+  }, [lessonId]);
+
+  if (loading) return <LoadingScreen />;
+
+  return (
+    <ScreenContainer>
+      <View className="flex-1 bg-background">
+        <TouchableOpacity
+          className="px-4 pt-4 pb-2 self-start"
+          onPress={() => router.back()}
+          accessibilityRole="button"
+        >
+          <AppText variant="muted" className="text-accent">
+            ← {t("student.lessons_header")}
+          </AppText>
+        </TouchableOpacity>
+
+        <View className="mx-4 h-52 rounded-2xl bg-surface-secondary items-center justify-center mb-6">
+          <AppText className="text-5xl mb-2">▶</AppText>
+          <AppText variant="muted">
+            {t("student.watch_placeholder_note")}
+          </AppText>
+        </View>
+
+        <View className="px-4">
+          <AppText variant="sectionTitle" className="mb-1">
+            {lesson?.title ?? t("student.watch_screen_title")}
+          </AppText>
+
+          {lesson && (
+            <View className="flex-row items-center mt-2 gap-x-4">
+              <AppText variant="muted">
+                {t("student.watch_lesson_order")}: {lesson.orderIndex}
+              </AppText>
+              {lesson.durationSeconds !== null && (
+                <AppText variant="muted">
+                  {Math.floor(lesson.durationSeconds / 60)}{" "}
+                  {t("student.duration_minutes")}
+                </AppText>
+              )}
+            </View>
+          )}
+
+          <AppText variant="muted" className="mt-4">
+            {t("student.watch_coming_soon")}
+          </AppText>
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+}
+```
+
+### Why we did it
+
+A watch screen that only shows a route param feels like a dev stub, not a user-facing screen. Loading lesson metadata immediately makes the route feel real, even before actual playback exists. [file:20]
+
+### Why this matters
+
+This is a useful mobile product habit: if a later feature will eventually fill a route with richer functionality, it is still worth making the placeholder route feel intentional now. That way:
+- navigation is already proven
+- route params are already proven
+- data lookup is already proven
+- future media work can focus only on playback concerns [file:20]
+
+---
+
+## Step 9 Update the root stack so course detail and watch feel like real pushed screens
+
+### What we did
+
+We updated `app/_layout.tsx` so the top-level dynamic routes for:
+- `student-course/[courseId]`
+- `student-watch/[lessonId]`
+
+use visible native headers again. [file:20]
+
+### Exact code we used
+
+```tsx
+import "../global.css";
+import "../lib/i18n";
+import { Stack } from "expo-router";
+import { t } from "../lib/i18n";
+
+export default function RootLayout() {
+  return (
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(student)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="student-course/[courseId]"
+        options={{
+          headerShown: true,
+          title: t("student.course_detail_title"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="student-watch/[lessonId]"
+        options={{
+          headerShown: true,
+          title: t("student.watch_screen_title"),
+          headerBackTitle: "",
+        }}
+      />
+    </Stack>
+  );
+}
+```
+
+### Why we did it
+
+These routes live outside the visible student tab bar, so once the student enters them, they should behave like proper pushed detail screens with clear native back navigation. [file:20]
+
+### Why this matters
+
+For a web engineer, it is easy to think of a route as “just another page.” In Expo Router on mobile, header ownership and back behavior are part of the product experience. A route can technically exist and still feel unfinished if entering it does not give the user a clear return path. [file:20]
+
+---
+
+## Step 10 Keep the design-system reuse and RTL safety intact
+
+### What we did
+
+We made sure Feature 10 continued using the shared design foundations from Feature 06 instead of reintroducing one-off screen markup. The feature kept reusing:
+- `ScreenContainer`
+- `AppText`
+- `Card`
+- `PrimaryButton`
+- `StatusBadge`
+- `EmptyState`
+- `LoadingScreen`
+- `Spacing` tokens from `constants/design.ts` [file:20]
+
+We also kept RTL-safe layout habits in the lesson-row structure:
+- `me-3`
+- `ms-2`
+- simple row composition
+- no hardcoded left/right assumptions [file:20]
+
+### Why we did it
+
+This feature sits directly in the kind of UI where RTL mistakes become obvious:
+- lesson icon
+- title
+- duration
+- badge
+- row spacing [file:20]
+
+Using the existing design primitives reduced visual drift, and using logical directional spacing protected the Arabic-first experience. [file:20]
+
+### Lesson
+
+Once a project introduces both:
+- a shared design system
+- and an Arabic-first rule
+
+every later feature becomes a test of whether those decisions are truly part of the team’s implementation habits or only one-time setup work. [file:20]
+
+---
+
+## Step 11 Verify the full student flow locally in Arabic first, then English
+
+### What we did
+
+After implementation, we tested the feature with this path:
+
+1. Open the app.
+2. Start from the student home screen.
+3. Go into Browse.
+4. Open an academic year.
+5. Open a subject.
+6. Open a course.
+7. Confirm the refined course detail screen.
+8. Tap a preview lesson.
+9. Confirm navigation to the watch placeholder.
+10. Go back.
+11. Tap a locked lesson.
+12. Confirm blocked Alert behavior.
+13. Re-check the same flow in English. [file:20]
+
+We also re-ran:
+```bash
+npx tsc --noEmit
+npx expo start --clear
+```
+
+### Why we did it
+
+This feature is complete only if the whole route path behaves as one connected learning flow, not if individual files merely compile. [file:20]
+
+Testing Arabic first mattered because Arabic is the default product mode, not a secondary afterthought. English verification mattered because Feature 04 established English as the supported secondary language for testing and fallback. [file:20]
+
+### What passed
+
+We confirmed all of the following:
+- the student can open a course from browse
+- the course detail screen renders with stronger summary structure
+- lesson rows clearly distinguish preview vs locked states
+- tapping a preview lesson opens the watch screen
+- tapping a locked lesson shows a blocked Alert and does not navigate
+- watch screen metadata loads from the mock data layer
+- Arabic still works as the default RTL experience
+- English still works for the same flow
+- TypeScript still passes
+- Expo still starts cleanly [file:20]
+
+---
+
+## Problems encountered in Feature 10
+
+### Problem 1 The route flow already worked, so it was easy to underestimate how much polish was still missing
+
+The first challenge was not a crash. It was a product-quality challenge. Because the student could already reach course detail and watch, the flow looked more complete than it really was. But there was still missing UX value:
+- no enrollment-state visibility
+- no useful enroll feedback
+- weak watch placeholder context
+- raw lesson ID shown to the user [file:20]
+
+### Why this was risky
+
+A route that technically works can still feel unready in a mobile app. If we had treated this as “already done,” the student journey would have remained functional but under-polished. [file:20]
+
+---
+
+### Problem 2 Enrollment state was needed by the screen, but the clean helper did not exist yet
+
+The course detail screen needed a simple answer to “what is this student’s status for this course?” but the existing mock data layer exposed only the lower-level enrollment helper. [file:20]
+
+### Why this mattered
+
+If we had solved this inline inside the screen, we would have weakened the architecture rule that query-style shaping belongs in the mock layer. [file:20]
+
+---
+
+### Problem 3 The watch screen was too placeholder-like for a real student flow
+
+The existing watch route was valid technically, but it still displayed a raw lesson ID rather than lesson metadata. [file:20]
+
+### Why this mattered
+
+That kind of placeholder is acceptable temporarily during route creation, but not ideal once the route becomes part of a polished end-to-end product path. [file:20]
+
+---
+
+### Problem 4 Header behavior and back-navigation clarity still mattered on standalone dynamic routes
+
+The course detail and watch routes live outside the visible student tab tree, which means native back behavior matters more. [file:20]
+
+### Why this mattered
+
+Without visible native headers, the flow can still work but feel less trustworthy or less mobile-native, especially once students move deeper into the app hierarchy. [file:20]
+
+---
+
+## How those problems were solved
+
+### Solution 1 Treat Feature 10 as a refinement feature, not a rebuild
+
+Instead of rebuilding the course flow from zero, we focused only on the missing product-quality pieces:
+- enrollment-state display
+- stronger course summary
+- better watch placeholder quality
+- cleaner back-navigation behavior [file:20]
+
+That kept the work efficient and aligned with the actual feature goal. [file:20]
+
+---
+
+### Solution 2 Add the smallest missing query helper to the mock layer
+
+We solved the enrollment-state need by adding exactly one helper:
+- `getEnrollmentStatus(courseId)` [file:20]
+
+This preserved the data-layer rule without overengineering the mock module. [file:20]
+
+---
+
+### Solution 3 Make the watch placeholder intentional instead of fake-complete
+
+We did not try to force real video playback into this feature. Instead, we made the watch screen honestly incomplete but still useful:
+- it loads lesson metadata
+- it shows a clear placeholder player area
+- it proves the route and lookup flow are correct [file:20]
+
+That is much cleaner than either:
+- leaving the route as a raw ID stub
+- or overreaching into real video integration too early [file:20]
+
+---
+
+### Solution 4 Use native Alert feedback for blocked and mock-success actions
+
+We used `Alert.alert(...)` for:
+- locked lesson blocked behavior
+- mock enroll-button success behavior [file:20]
+
+This kept the scope small while still giving users immediate mobile-appropriate feedback. [file:20]
+
+---
+
+## React vs React Native notes
+
+### 1. A detail route is not complete just because navigation works
+
+In a web app, it is common to treat “route exists and loads data” as most of the job. In mobile, detail routes often need stronger immediate context because the user has:
+- less screen space
+- less visible hierarchy
+- more reliance on native navigation patterns [file:20]
+
+That is why metadata, back-navigation clarity, and status signaling mattered so much here. [file:20]
+
+---
+
+### 2. Temporary placeholders should still feel intentional
+
+A web engineer may be comfortable with obvious stubs during incremental development. In mobile, even temporary placeholder screens are often directly experienced as part of the product flow. [file:20]
+
+So a good placeholder should:
+- prove routing
+- prove data lookup
+- use real design primitives
+- communicate what will exist later [file:20]
+
+That is exactly what we did with the refined watch screen. [file:20]
+
+---
+
+### 3. Shared UI primitives only stay valuable if later features keep reusing them
+
+Feature 06 created the UI foundation. Feature 10 helped prove that the foundation can support real detail-level product work without falling back into duplicated styling. [file:20]
+
+This is the same discipline you want in a mature Next.js design system: once the shared layer exists, future features should become easier and more consistent, not drift back into one-off markup. [file:20]
+
+---
+
+### 4. Mobile localization affects layout more quickly than web layouts often do
+
+On the web, wider layouts can absorb some translation differences more easily. In mobile row-based UIs, language changes affect:
+- badge width
+- line wrapping
+- row height
+- spacing balance
+- direction-sensitive layout [file:20]
+
+That is why Arabic-first testing was not optional polish. It was part of the correctness of the feature. [file:20]
+
+---
+
+## Discussion notes
+
+Feature 10 is a strong example of a mobile refinement feature that appears small but teaches several important lessons. It was not mainly about adding new routing. It was about making an already-existing route path feel believable and complete. [file:20]
+
+The most important engineering ideas in this feature were:
+- route quality is different from route existence
+- mock data architecture should still carry query-style helpers
+- placeholders should be intentional
+- blocked interactions need clear feedback
+- localization and RTL still shape detail-level UI work [file:20]
+
+This feature also shows a healthy implementation pattern for the rest of the project:
+1. build the route
+2. connect the route
+3. make the route readable
+4. make the interaction rules obvious
+5. improve the product feel without expanding into the next backend phase [file:20]
+
+That pattern will likely matter again in later teacher, profile, payment, and navigation-polish features. [file:20]
+
+---
+
+## Final output of Feature 10
+
+At the end of this feature, the project has:
+- a refined student course detail screen
+- clearer course summary structure
+- enrollment-status display using mock data
+- a lesson list with clearer preview vs locked presentation
+- blocked locked-lesson behavior using native Alert
+- mock enroll-button feedback using native Alert
+- a refined watch placeholder screen that loads real lesson metadata
+- a top-level route flow that feels more native because course detail and watch use visible stack headers
+- continued reuse of the shared design system
+- continued Arabic-first translation coverage
+- continued English support for the same flow
+- no backend integration yet by design [file:20]
+
+The student journey now feels much closer to a real learning product path:
+- Browse
+- Course Detail
+- Lesson decision
+- Watch placeholder [file:20]
+
+---
+
+## Completion checklist for Feature 10
+
+Feature 10 is complete when all of these are true:
+
+- `lib/mock-data/student.ts` includes `getEnrollmentStatus()`.
+- `lib/i18n/ar.ts` includes the new Feature 10 Arabic strings.
+- `lib/i18n/en.ts` includes the matching English strings.
+- `app/student-course/[courseId].tsx` is refined beyond the earlier placeholder-level version.
+- The course detail screen shows title, teacher, description, lesson count, and price.
+- The course detail screen shows enrollment status when applicable.
+- The enroll button only appears for the non-enrolled mock state.
+- Tapping the enroll button shows mock success feedback.
+- Lesson rows still render in order.
+- Preview lessons are visually distinct.
+- Locked lessons are visually distinct.
+- Tapping a preview lesson navigates to watch.
+- Tapping a locked lesson does not navigate.
+- Locked behavior is shown through a native Alert.
+- `app/student-watch/[lessonId].tsx` loads lesson metadata from the mock data layer.
+- The watch screen no longer shows only a raw lesson ID.
+- The watch screen remains a placeholder intentionally, without real playback yet.
+- `app/_layout.tsx` gives the course detail and watch routes visible stack headers.
+- Arabic remains the default experience.
+- All visible new UI text comes from translation keys.
+- RTL remains safe in the course and lesson flow.
+- English still works for the same flow.
+- The entire feature works with mock data only.
+- No Supabase or Clerk integration was introduced.
+- `npx tsc --noEmit` passes.
+- `npx expo start --clear` starts without errors. [file:20]
+
+---
+
+## Official references
+
+These were the most relevant official references for this feature:
+
+- Expo Router dynamic routes  
+  https://docs.expo.dev/router/dynamic-routes/
+
+- Expo Router Stack navigation options  
+  https://docs.expo.dev/router/advanced/stack/
+
+- React Native Alert  
+  https://reactnative.dev/docs/alert
+
+- React Native FlatList `ListHeaderComponent`  
+  https://reactnative.dev/docs/flatlist#listheadercomponent
+
+- Expo Video documentation for future real playback work  
+  https://docs.expo.dev/versions/latest/sdk/video/

@@ -48,6 +48,21 @@ const en = {
     browse_pick_year: "Choose an academic year",
     browse_pick_subject: "Choose a subject",
     courses_in_subject: "Courses in",
+    // Course Detail refinements
+    course_lessons_count: "Lessons",
+    course_enrolled_badge: "Enrolled",
+    course_pending_badge: "Pending Review",
+    course_not_enrolled: "Not Enrolled",
+    enroll_success_title: "Enrollment Request",
+    enroll_success_msg:
+      "Your request has been sent successfully. The teacher will review it.",
+    locked_alert_title: "Lesson Locked",
+    locked_alert_msg:
+      "This lesson requires course enrollment. Tap 'Request Enrollment' to submit your request.",
+    // Watch screen refinements
+    watch_lesson_label: "Lesson",
+    watch_lesson_order: "Order",
+    watch_placeholder_note: "Video player will be available here.",
   },
 };
 

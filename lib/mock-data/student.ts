@@ -4,7 +4,7 @@
 
 import type { Course, CourseDetail, Lesson, Enrollment } from "../types";
 export { getAcademicYears, getSubjectsByYear } from "./shared";
-
+export type EnrollmentStatus = "confirmed" | "pending" | "none";
 // ─── Courses ──────────────────────────────────────────────────────────
 
 const COURSES: Course[] = [
@@ -380,4 +380,16 @@ export async function getMyEnrolledCourses(): Promise<Course[]> {
  */
 export async function getFeaturedCourses(): Promise<Course[]> {
   return COURSES.slice(0, 3);
+}
+
+/**
+ * Returns the enrollment status for the current mock student on a given course.
+ * Maps to what will eventually be an RLS-protected Supabase query.
+ */
+export async function getEnrollmentStatus(
+  courseId: string
+): Promise<EnrollmentStatus> {
+  const enrollment = await getMyEnrollmentForCourse(courseId);
+  if (!enrollment) return "none";
+  return enrollment.status === "confirmed" ? "confirmed" : "pending";
 }

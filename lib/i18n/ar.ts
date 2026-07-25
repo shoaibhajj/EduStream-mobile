@@ -48,6 +48,19 @@ const ar = {
     browse_pick_year: "اختر السنة الدراسية",
     browse_pick_subject: "اختر المادة",
     courses_in_subject: "الدورات في مادة",
+    course_lessons_count: "عدد الحصص",
+    course_enrolled_badge: "مسجّل",
+    course_pending_badge: "قيد المراجعة",
+    course_not_enrolled: "غير مسجّل",
+    enroll_success_title: "طلب التسجيل",
+    enroll_success_msg: "تم إرسال طلبك بنجاح. سيتم مراجعته من قِبَل المعلم.",
+    locked_alert_title: "الدرس مقفل",
+    locked_alert_msg:
+      "هذا الدرس يتطلب الاشتراك في الدورة. اضغط «طلب التسجيل» لإرسال طلبك.",
+    // Watch screen refinements
+    watch_lesson_label: "الحصة",
+    watch_lesson_order: "الترتيب",
+    watch_placeholder_note: "سيكون مشغّل الفيديو متاحاً هنا.",
   },
 };
 
