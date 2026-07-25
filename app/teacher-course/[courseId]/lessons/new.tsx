@@ -1,11 +1,29 @@
-import { View, Text } from "react-native";
+// app/teacher-course/[courseId]/lessons/new.tsx
+import { useLocalSearchParams } from "expo-router";
 
-export default function NewLessons() {
+import { mockCreateLesson } from "../../../../lib/mock-data/teacher";
+import { LessonForm } from "../../../../components/teacher/LessonForm";
+
+export default function NewLesson() {
+  const { courseId } = useLocalSearchParams<{ courseId: string }>();
+
   return (
-    <View className="flex-1 bg-background items-center justify-center">
-      <Text className="text-text-primary text-base font-semibold">
-        NewLessons
-      </Text>
-    </View>
+    <LessonForm
+      initialValues={{
+        title: "",
+        videoUrl: "",
+        durationSeconds: 0,
+        isPreview: false,
+        orderIndex: 1,
+      }}
+      onSave={async (values) => {
+        await mockCreateLesson({
+          courseId: courseId ?? "",
+          ...values,
+          videoUrl: values.videoUrl || null,
+          durationSeconds: values.durationSeconds || null,
+        });
+      }}
+    />
   );
 }

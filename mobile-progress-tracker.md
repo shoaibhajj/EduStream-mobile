@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 11 complete — Teacher Home Screen is now built as the main landing screen for teacher users using the shared UI foundations and mock data layer. The teacher experience includes a dashboard-style home layout with a top summary area, mock-data-driven overview blocks such as total courses, pending enrollment requests, and recent courses, plus quick teacher entry points for future flows. All visible text uses translation keys, Arabic remains the default experience, RTL was visually checked first, and English was also confirmed working. Teacher navigation was kept within the mock-data-first phase with no Supabase, Clerk, or real backend usage. `npx tsc --noEmit` and `npx expo start --clear` passed after the changes.
+Feature 12 complete — Teacher Course Management UI is now built in the mock-data-first phase with Arabic as the default experience and English confirmed as the secondary language. The teacher flow now includes a real course-management list screen inside the teacher tabs, mock create/edit course forms, mock lesson list and create/edit lesson forms, plus navigation from the teacher area into those management flows using the shared UI foundations and mock data layer only. All visible text uses translation keys, RTL was checked first, and the final route structure keeps the course list inside `(teacher)` while deeper create/edit/lesson management screens stay in top-level teacher course routes so native back navigation works correctly.
 
 
 ## Next Up
-Feature 12 — Build Teacher Course Management UI
+Feature 13 — Build Profile and Payment Info Screens
 
 
 ## Build Progress
@@ -24,6 +24,7 @@ Feature 12 — Build Teacher Course Management UI
 - 09 — Build Subject/Course Browsing Screens
 - 10 — Build Course Detail and Lessons Screens
 - 11 — Build Teacher Home Screen
+- 12 — Build Teacher Course Management UI
 
 
 ### In Progress
@@ -31,7 +32,6 @@ Feature 12 — Build Teacher Course Management UI
 
 
 ### Not Started
-- 12 — Build Teacher Course Management UI
 - 13 — Build Profile and Payment Info Screens
 - 14 — Connect Navigation Flows
 - 15 — Polish UI and Empty/Error States
@@ -127,6 +127,16 @@ Feature 12 — Build Teacher Course Management UI
   - `router.push("/teacher-course/new");`
   - `router.push(\`/teacher-course/${courseId}/edit\`);`
   - `router.push(\`/teacher-course/${courseId}/lessons\`);`
+- Built the teacher course-management list as a real teacher tab screen in `app/(teacher)/courses.tsx` instead of using a redirect screen, which fixed the loading loop and restored correct native back behavior for pushed management screens.
+- Added teacher course-management translation keys to both `lib/i18n/ar.ts` and `lib/i18n/en.ts`, then corrected their nesting so all new strings live under the `teacher` namespace and resolve correctly through `t("teacher.*")`.
+- Added mock teacher course-management helpers for course and lesson retrieval plus mock create/update actions in `lib/mock-data/teacher.ts`, keeping mutations inside the data layer and backend-ready in shape while remaining mock-only.
+- Built mock create/edit course UI and mock create/edit lesson UI using shared design primitives, controlled `TextInput` fields, translation-key-based labels, and simple validation alerts.
+- Fixed the Android keyboard-dismiss issue in the course form by moving the local `FormField` helper outside the component body so `TextInput` focus is preserved across re-renders.
+- Confirmed the teacher `الدورات` tab now loads the course list directly, while create/edit course and lesson screens stay outside the tab tree and show the native stack back arrow correctly.
+- Added a third teacher tab for courses and configured Ionicons-based tab icons for teacher navigation.
+- Confirmed the full teacher course-management flow works locally in Arabic first, then English: Home/Teacher area → Courses tab → course list → create/edit course → lesson list → create/edit lesson.
+- Confirmed all new screens still use mock data only; save actions are mock-stage behaviors and do not persist after a full reload or app restart.
+- Confirmed `npx tsc --noEmit` passes clean after the full Feature 12 implementation and fixes.
 
 
 ## Architecture Decisions
@@ -151,6 +161,7 @@ Feature 12 — Build Teacher Course Management UI
 - Enrollment status query helpers belong in the mock data layer (`lib/mock-data/student.ts`), not inside screen components, so the status check is a single-line import that can later be replaced by a Supabase RLS query without touching screen logic.
 - The `student-course` and `student-watch` top-level dynamic routes use `headerShown: true` in the root stack so students always have a visible native back button when navigating into the detail/watch flow from anywhere in the app.
 - Teacher home follows the same role-based routing principle as student home: only true teacher entry points should stay inside the `(teacher)` tabs group, while future teacher course management detail flows should live in top-level routes outside the tabs tree.
+- For teacher course management, the course list entry now lives inside the `(teacher)` tabs tree as `app/(teacher)/courses.tsx`, while create/edit course and lesson management screens remain in the top-level `teacher-course` route tree so native back navigation behaves correctly without redirect-loop workarounds.
 
 
 ## Notes / Risks
@@ -170,3 +181,5 @@ Feature 12 — Build Teacher Course Management UI
 - The enroll button mock Alert is a UI-only placeholder. When the backend phase begins, this will be replaced by an actual enrollment insert into Supabase with proper loading and error states.
 - The thumbnail placeholder area on the course detail screen uses an emoji inside a neutral box. This will be replaced with a real `<Image>` component reading from `thumbnailUrl` once course thumbnail assets are introduced.
 - Teacher course management routes must stay out of the `(teacher)` tabs tree once Feature 12 begins, otherwise screens like `new`, `edit`, and `lessons` can appear as unwanted tab bar items.
+- Teacher course and lesson save actions are still mock-only; they currently simulate success but do not persist after a full app restart or data reload.
+- Redirect-style tab screens should be avoided for core teacher destinations because they can create loading loops and break native back behavior when revisiting the tab.

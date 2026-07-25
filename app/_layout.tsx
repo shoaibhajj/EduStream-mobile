@@ -51,6 +51,30 @@ export default function RootLayout() {
           headerBackTitle: "",
         }}
       />
+      <Stack.Screen
+        name="teacher-course/index"
+        options={{
+          headerShown: true,
+          title: t("teacher.manage_courses_title"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="teacher-course/[courseId]/lessons/new"
+        options={{
+          headerShown: true,
+          title: t("teacher.lesson_form_title_new"),
+          headerBackTitle: "",
+        }}
+      />
+      <Stack.Screen
+        name="teacher-course/[courseId]/lessons/[lessonId]/edit"
+        options={{
+          headerShown: true,
+          title: t("teacher.lesson_form_title_edit"),
+          headerBackTitle: "",
+        }}
+      />
     </Stack>
   );
 }

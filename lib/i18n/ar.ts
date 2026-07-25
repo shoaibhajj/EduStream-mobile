@@ -84,6 +84,68 @@ const ar = {
     enrollments_placeholder_title: "إدارة الطلبات",
     enrollments_placeholder_msg:
       "ستجد هنا طلبات تسجيل الطلاب لمراجعتها وتأكيدها.",
+
+    // — Course Management —
+    manage_courses_title: "إدارة الدورات",
+    manage_courses_subtitle: "جميع دوراتك",
+    add_course_button: "إضافة دورة جديدة",
+    no_courses_yet: "لا توجد دورات بعد. ابدأ بإضافة دورتك الأولى.",
+    course_card_lessons: "حصة",
+    course_card_free: "مجاني",
+    course_manage_lessons: "إدارة الحصص",
+    course_edit_button: "تعديل",
+
+    // — Course Form —
+    course_form_title_new: "دورة جديدة",
+    course_form_title_edit: "تعديل الدورة",
+    course_form_field_title: "عنوان الدورة",
+    course_form_field_title_placeholder: "أدخل عنوان الدورة",
+    course_form_field_description: "الوصف",
+    course_form_field_description_placeholder: "اكتب وصفاً مختصراً للدورة",
+    course_form_field_price: "السعر (ل.س)",
+    course_form_field_price_placeholder: "0",
+    course_form_field_is_free: "دورة مجانية",
+    course_form_field_thumbnail: "صورة الغلاف (اختياري)",
+    course_form_thumbnail_placeholder: "اختيار الصورة — قريباً",
+    course_form_save: "حفظ",
+    course_form_cancel: "إلغاء",
+    course_form_saved_title: "تم الحفظ",
+    course_form_saved_msg: "تم حفظ الدورة بنجاح (بيانات تجريبية).",
+    course_form_validation_title: "تنبيه",
+    course_form_validation_msg: "يرجى إدخال عنوان الدورة على الأقل.",
+
+    // — Lesson Management —
+    lessons_title: "الحصص",
+    lessons_subtitle: "حصص الدورة",
+    add_lesson_button: "إضافة حصة جديدة",
+    no_lessons_yet: "لا توجد حصص بعد. ابدأ بإضافة أول حصة.",
+    lesson_edit_button: "تعديل",
+    lesson_order_label: "الترتيب",
+    lesson_preview_label: "معاينة مجانية",
+    lesson_locked_label: "مقفل",
+
+    // — Lesson Form —
+    lesson_form_title_new: "حصة جديدة",
+    lesson_form_title_edit: "تعديل الحصة",
+    lesson_form_field_title: "عنوان الحصة",
+    lesson_form_field_title_placeholder: "أدخل عنوان الحصة",
+    lesson_form_field_video_url: "رابط الفيديو",
+    lesson_form_field_video_url_placeholder:
+      "https://... (اختياري، للمرحلة القادمة)",
+    lesson_form_field_duration: "المدة (بالثواني)",
+    lesson_form_field_duration_placeholder: "0",
+    lesson_form_field_is_preview: "متاح كمعاينة مجانية",
+    lesson_form_field_order: "ترتيب الحصة",
+    lesson_form_field_order_placeholder: "1",
+    lesson_form_save: "حفظ",
+    lesson_form_cancel: "إلغاء",
+    lesson_form_saved_title: "تم الحفظ",
+    lesson_form_saved_msg: "تم حفظ الحصة بنجاح (بيانات تجريبية).",
+    lesson_form_validation_title: "تنبيه",
+    lesson_form_validation_msg: "يرجى إدخال عنوان الحصة على الأقل.",
+    edit_course_title: "تعديل الدورة",
+    course_lessons_title: "حصص الدورة",
+    tab_courses: "الدورات",
   },
 };
 

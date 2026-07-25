@@ -151,7 +151,7 @@ const COURSE_DETAILS: CourseDetail[] = [
 
 // ─── Lessons ──────────────────────────────────────────────────────────
 
-const LESSONS: Lesson[] = [
+export const LESSONS: Lesson[] = [
   // c-1: أساسيات الفيزياء
   {
     id: "l-1",

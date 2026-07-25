@@ -87,6 +87,68 @@ const en = {
     enrollments_placeholder_title: "Manage Requests",
     enrollments_placeholder_msg:
       "Student enrollment requests will appear here for review and confirmation.",
+    // — Course Management —
+    manage_courses_title: "Manage Courses",
+    manage_courses_subtitle: "All your courses",
+    add_course_button: "Add New Course",
+    no_courses_yet: "No courses yet. Start by adding your first course.",
+    course_card_lessons: "lessons",
+    course_card_free: "Free",
+    course_manage_lessons: "Manage Lessons",
+    course_edit_button: "Edit",
+
+    // — Course Form —
+    course_form_title_new: "New Course",
+    course_form_title_edit: "Edit Course",
+    course_form_field_title: "Course Title",
+    course_form_field_title_placeholder: "Enter course title",
+    course_form_field_description: "Description",
+    course_form_field_description_placeholder:
+      "Write a short description for this course",
+    course_form_field_price: "Price (SYP)",
+    course_form_field_price_placeholder: "0",
+    course_form_field_is_free: "Free course",
+    course_form_field_thumbnail: "Cover Image (optional)",
+    course_form_thumbnail_placeholder: "Choose image — coming soon",
+    course_form_save: "Save",
+    course_form_cancel: "Cancel",
+    course_form_saved_title: "Saved",
+    course_form_saved_msg: "Course saved successfully (mock data).",
+    course_form_validation_title: "Notice",
+    course_form_validation_msg: "Please enter at least a course title.",
+
+    // — Lesson Management —
+    lessons_title: "Lessons",
+    lessons_subtitle: "Course lessons",
+    add_lesson_button: "Add New Lesson",
+    no_lessons_yet: "No lessons yet. Start by adding the first lesson.",
+    lesson_edit_button: "Edit",
+    lesson_order_label: "Order",
+    lesson_preview_label: "Free Preview",
+    lesson_locked_label: "Locked",
+
+    // — Lesson Form —
+    lesson_form_title_new: "New Lesson",
+    lesson_form_title_edit: "Edit Lesson",
+    lesson_form_field_title: "Lesson Title",
+    lesson_form_field_title_placeholder: "Enter lesson title",
+    lesson_form_field_video_url: "Video URL",
+    lesson_form_field_video_url_placeholder:
+      "https://... (optional, for later phase)",
+    lesson_form_field_duration: "Duration (seconds)",
+    lesson_form_field_duration_placeholder: "0",
+    lesson_form_field_is_preview: "Available as free preview",
+    lesson_form_field_order: "Lesson order",
+    lesson_form_field_order_placeholder: "1",
+    lesson_form_save: "Save",
+    lesson_form_cancel: "Cancel",
+    lesson_form_saved_title: "Saved",
+    lesson_form_saved_msg: "Lesson saved successfully (mock data).",
+    lesson_form_validation_title: "Notice",
+    lesson_form_validation_msg: "Please enter at least a lesson title.",
+    edit_course_title: "Edit Course",
+    course_lessons_title: "Course Lessons",
+    tab_courses: "Courses",
   },
 };
 

@@ -3,6 +3,8 @@
 
 import type { Teacher, PaymentInfo, Course, Enrollment } from "../types";
 import { COURSES } from "./student";
+import type { Lesson } from "../types";
+import { LESSONS } from "./student"; 
 const TEACHERS: Teacher[] = [
   {
     id: "teacher-1",
@@ -160,4 +162,81 @@ export async function getTeacherHomeSummary(teacherId: string): Promise<{
   ).length;
   const recentCourses = courses.slice(0, 3);
   return { totalCourses: courses.length, pendingCount, recentCourses };
+}
+
+
+// ── Course Management helpers ─────────────────────────────────────────
+// These are mock-only. Replace with Supabase inserts/updates later.
+
+// LESSONS is already exported from student.ts
+
+// Returns all lessons for a course, sorted by orderIndex
+export async function getLessonsByCourseForTeacher(
+  courseId: string
+): Promise<Lesson[]> {
+  return LESSONS.filter((l) => l.courseId === courseId).sort(
+    (a, b) => a.orderIndex - b.orderIndex
+  );
+}
+
+// Mock "create course" — logs and returns a fake new Course id
+export async function mockCreateCourse(data: {
+  title: string;
+  description: string;
+  price: number;
+  isFree: boolean;
+  subjectId: string;
+  teacherId: string;
+}): Promise<{ id: string }> {
+  console.log("[mock] createCourse →", data);
+  return { id: `course-mock-${Date.now()}` };
+}
+
+// Mock "update course" — logs and resolves
+export async function mockUpdateCourse(
+  courseId: string,
+  data: Partial<{ title: string; description: string; price: number; isFree: boolean }>
+): Promise<void> {
+  console.log("[mock] updateCourse →", courseId, data);
+}
+
+// Mock "create lesson" — logs and returns a fake id
+export async function mockCreateLesson(data: {
+  courseId: string;
+  title: string;
+  orderIndex: number;
+  isPreview: boolean;
+  durationSeconds: number | null;
+  videoUrl: string | null;
+}): Promise<{ id: string }> {
+  console.log("[mock] createLesson →", data);
+  return { id: `lesson-mock-${Date.now()}` };
+}
+
+// Mock "update lesson" — logs and resolves
+export async function mockUpdateLesson(
+  lessonId: string,
+  data: Partial<{
+    title: string;
+    orderIndex: number;
+    isPreview: boolean;
+    durationSeconds: number | null;
+    videoUrl: string | null;
+  }>
+): Promise<void> {
+  console.log("[mock] updateLesson →", lessonId, data);
+}
+
+// Get a single course detail for the teacher (for edit form prefill)
+export async function getTeacherCourseById(
+  courseId: string
+): Promise<Course | null> {
+  return COURSES.find((c) => c.id === courseId) ?? null;
+}
+
+// Get a single lesson for the teacher (for edit form prefill)
+export async function getTeacherLessonById(
+  lessonId: string
+): Promise<Lesson | null> {
+  return LESSONS.find((l) => l.id === lessonId) ?? null;
 }

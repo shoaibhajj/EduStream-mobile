@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { t } from "../../lib/i18n";
-
+import { Ionicons } from "@expo/vector-icons";
 export default function TeacherLayout() {
   return (
     <Tabs
@@ -24,13 +24,31 @@ export default function TeacherLayout() {
         options={{
           tabBarLabel: t("teacher.tab_home"),
           title: t("teacher.tab_home"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home-outline" size={22} color={color} />
+          ),
         }}
       />
+
       <Tabs.Screen
         name="enrollments"
         options={{
           tabBarLabel: t("teacher.tab_enrollments"),
           title: t("teacher.tab_enrollments"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="mail-unread-outline" size={22} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="courses"
+        options={{
+          tabBarLabel: t("teacher.tab_courses"),
+          title: t("teacher.tab_courses"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="book-outline" size={22} color={color} />
+          ),
         }}
       />
     </Tabs>

@@ -121,12 +121,7 @@ export default function TeacherDashboard() {
           />
           <TouchableOpacity
             className="border border-accent rounded-xl py-3 px-4 items-center active:opacity-70"
-            onPress={() =>
-              Alert.alert(
-                t("teacher.action_add_course_title"),
-                t("teacher.action_add_course_msg")
-              )
-            }
+            onPress={() => router.push("/teacher-course/new")}
           >
             <AppText className="text-accent font-semibold">
               {t("teacher.action_add_course")}
@@ -143,12 +138,7 @@ export default function TeacherDashboard() {
             <TouchableOpacity
               key={course.id}
               className="mb-3 active:opacity-70"
-              onPress={() =>
-                Alert.alert(
-                  t("teacher.course_detail_coming_title"),
-                  t("teacher.course_detail_coming_msg")
-                )
-              }
+              onPress={() => router.push(`/teacher-course/${course.id}/edit`)}
             >
               <Card>
                 <AppText variant="sectionTitle">{course.title}</AppText>

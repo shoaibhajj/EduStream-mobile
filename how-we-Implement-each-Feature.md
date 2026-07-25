@@ -8520,3 +8520,626 @@ These were the most useful official references for this feature:
 One practical takeaway from those references is especially important for teacher flows: top-level role destinations can live inside a tab route group, while deeper workflow screens should be pushed outside that tabs tree when they are not meant to be visible tab items.
 
 ---
+---
+
+# Feature 12 — Build Teacher Course Management UI
+
+## What this feature does
+
+This feature adds the first full teacher management flow for courses and lessons in the mobile app.
+
+It does **not** connect to a real backend yet. It stays fully inside the mock-data-first phase and focuses on UI, navigation, form structure, translation coverage, and data-layer shape so the feature can later be connected to Supabase with minimal screen rewrites.
+
+At the end of this feature, the teacher can:
+
+- open the teacher area
+- open the course management screen
+- see a list of their courses in Arabic by default
+- create a mock course
+- edit a mock course
+- open lesson management for a course
+- create a mock lesson
+- edit a mock lesson
+- switch to English and confirm the same flow still works
+
+The key output of this feature is not persistence. The key output is a clean teacher management architecture with correct route structure, shared UI usage, Arabic-first translation coverage, and mock data helpers that match the future backend direction.
+
+---
+
+## Why this feature matters
+
+Before this feature, the teacher area only had a home screen and enrollments screen. That meant the teacher role existed visually, but could not yet manage the core product object: the course.
+
+This feature matters because it introduces the first CRUD-like teacher workflow, even though the save behavior is still mock-only for now.
+
+It also teaches an important React Native and Expo Router architectural lesson:
+
+- not every screen belongs inside the tab tree
+- list screens can live inside a tab
+- deeper flows like create, edit, and nested lesson management usually work better as pushed stack screens outside the tab tree
+
+For a React / Next.js developer, this is similar to the difference between:
+
+- top-level application sections in persistent navigation
+- nested workflow pages that should preserve back behavior naturally
+
+If this feature had been implemented with weak route boundaries, the UI might still look correct at first, but back navigation and tab behavior would feel wrong. That is exactly what happened during implementation until the route structure was corrected.
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the latest repo documents before touching code
+2. confirm the current tracker numbering and feature order
+3. inspect the existing teacher routes and mock data layer
+4. add missing translation keys for teacher course and lesson management
+5. extend the mock data layer with teacher course and lesson helper functions
+6. build the teacher course list / management screen
+7. build mock create and edit course UI
+8. build mock lesson list / management UI
+9. build mock create and edit lesson UI
+10. wire the flow into teacher navigation
+11. test Arabic first, then English
+12. fix any Expo Router back-navigation problems before marking the feature complete
+
+Important constraints stayed active:
+
+- still mock-data-first
+- no Supabase
+- no Clerk
+- all visible text must come from translation files
+- Arabic is default
+- RTL must be safe
+- no hardcoded visible UI strings in screens
+- keep forms simple and backend-ready rather than over-abstracted
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before changing code, we re-read the latest versions of:
+
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+We also re-checked the current teacher route files and confirmed which files already existed and which were only placeholders.
+
+### Why we did it
+
+This mattered because the tracker had already shifted earlier when the Arabic-first localization feature was inserted.
+
+So for Feature 12, the progress tracker had to remain the source of truth, not older chat numbering and not memory.
+
+This step also confirmed the current implementation boundaries:
+
+- teacher management is still mock-only
+- shared design foundations must be reused
+- visible text must stay translation-key based
+- route behavior must fit Expo Router patterns already used in the app
+
+### React / Next.js note
+
+In a web app, it is easy to think “I already know the plan.” In a repo-driven mobile project, that leads to drift very quickly.
+
+Re-reading the docs before each feature is the equivalent of checking current architecture notes, route conventions, and project milestones before opening a big pull request.
+
+---
+
+## Step 2 — Inspect the existing teacher structure before adding UI
+
+### What we did
+
+We checked what already existed for the teacher flow.
+
+The important findings were:
+
+- teacher home screen already existed
+- teacher enrollments tab already existed
+- top-level teacher course routes already existed as files, but most were placeholders
+- root stack configuration already knew about some teacher course screens
+- the mock teacher data layer already had course list support, but not enough create/edit/lesson helpers
+- the dashboard had an “add course” action, but course management as a full flow was not built yet
+
+### Why we did it
+
+This prevented unnecessary rework.
+
+Instead of inventing a new route tree from scratch, we built on the existing teacher area and filled the missing pieces. That kept the feature cohesive with the current project architecture.
+
+### React / Next.js note
+
+This is similar to inspecting whether you already have:
+
+- layout routes
+- nested pages
+- server stubs
+- component primitives
+- query helpers
+
+before building a new admin feature in a Next.js app.
+
+Good implementation often begins with identifying what is already stable enough to reuse.
+
+---
+
+## Step 3 — Add translation keys first
+
+### What we did
+
+Before building screens, we added all visible teacher course-management strings to both:
+
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+That included keys for:
+
+- course list screen title and subtitle
+- add course button
+- empty state messages
+- edit/manage lessons actions
+- course form labels and placeholders
+- validation and success alerts
+- lesson list labels and badges
+- lesson form labels and placeholders
+
+### Why we did it
+
+This project is Arabic-first, so visible text should never be treated as a late polish step.
+
+By adding the translation keys first, every screen could be built with the correct discipline from the beginning:
+
+- Arabic default behavior
+- English secondary support
+- no hardcoded UI strings in screen files
+- safer RTL validation
+
+### React / Next.js note
+
+In a web project, teams often postpone localization until later because browser layout feels forgiving. In a React Native Arabic-first app, delaying localization creates more expensive cleanup later because text, spacing, header titles, and RTL assumptions become deeply embedded in screen code.
+
+So here, localization is not a decoration step. It is part of the screen architecture.
+
+---
+
+## Step 4 — Extend the mock data layer for teacher management
+
+### What we did
+
+We added teacher management helpers to the mock data layer so that screen files could remain focused on UI and navigation.
+
+The new helpers covered things like:
+
+- getting a teacher course by id
+- getting lessons for a course
+- getting a teacher lesson by id
+- mock create course
+- mock update course
+- mock create lesson
+- mock update lesson
+
+We also confirmed the lesson data source was exported correctly from the mock layer so teacher lesson screens could query it.
+
+### Why we did it
+
+The project rule was very clear:
+
+if teacher management needs additional helper, query, or update functions, put them in the mock data layer rather than inside screen files.
+
+This keeps the architecture backend-ready.
+
+When real persistence is introduced later, we should be able to replace mock functions with Supabase operations while leaving most screen code intact.
+
+### React / Next.js note
+
+Think of this as creating a lightweight repository or service layer.
+
+Instead of putting fetch, mutation, and filtering logic directly inside a page component, you centralize it in functions that represent domain behavior. In web React, that might later become API hooks, React Query wrappers, or server actions. In this mobile app, it is currently a mock data abstraction that will later become real backend access.
+
+---
+
+## Step 5 — Build the course list as the teacher’s management entry
+
+### What we did
+
+We first built the teacher course management list screen as a dedicated route that displays:
+
+- management title
+- management subtitle
+- add course button
+- list of teacher courses
+- edit button for each course
+- manage lessons button for each course
+- empty state if no courses exist
+
+It reused the shared design primitives already created earlier:
+
+- `ScreenContainer`
+- `AppText`
+- `Card`
+- `PrimaryButton`
+- `EmptyState`
+- `StatusBadge`
+- shared spacing tokens
+
+### Why we did it
+
+The teacher needs a stable landing point for course management.
+
+A proper management flow usually begins with the list screen because that screen becomes the return destination for:
+
+- create course
+- edit course
+- lesson list
+- lesson edit
+- lesson creation
+
+Without this list screen, deeper screens have nowhere meaningful to go back to.
+
+### React / Next.js note
+
+This is similar to building an admin list page before building create/edit pages in a dashboard. The list page becomes the anchor of the workflow.
+
+---
+
+## Step 6 — Build create and edit course forms using one shared form component
+
+### What we did
+
+We built a shared `CourseForm` component and used it from both:
+
+- `new.tsx`
+- `[courseId]/edit.tsx`
+
+The form handled:
+
+- title
+- description
+- free / paid toggle
+- price
+- thumbnail placeholder field
+- simple validation
+- mock save behavior
+- success feedback and back navigation
+
+The create screen passed empty initial values.  
+The edit screen loaded existing mock course data and passed pre-filled values.
+
+### Why we did it
+
+This avoided duplicating the same form layout and validation logic in two screens.
+
+Create and edit are conceptually different actions, but visually and structurally they are the same form. So the correct abstraction was not a huge dynamic form system. It was one focused reusable component with initial values and an `onSave` callback.
+
+### React / Next.js note
+
+This is exactly the same healthy pattern used in web React:
+
+- shared form component
+- separate create and edit pages
+- edit page fetches existing data
+- both pages submit through different handlers
+
+The difference in React Native is that form UI uses `TextInput`, `Switch`, scroll behavior, and keyboard behavior rather than HTML inputs and browser forms.
+
+---
+
+## Step 7 — Build lesson management as a nested workflow under a course
+
+### What we did
+
+We added a lesson list screen for a given course and then added create/edit lesson forms under that route tree.
+
+That flow allowed the teacher to:
+
+- open a course
+- manage its lessons
+- see each lesson’s title
+- see order
+- see preview / locked state
+- add a lesson
+- edit an existing lesson
+
+We also used a shared `LessonForm` component so create and edit lesson screens stayed consistent and simple.
+
+### Why we did it
+
+Lesson management belongs under course management conceptually and in the route structure.
+
+A lesson should not feel like a top-level app object disconnected from its course. So nesting lesson management under a course keeps the mental model correct for both the user and the developer.
+
+### React / Next.js note
+
+This is like nesting chapter management inside a course admin section in a dashboard instead of treating chapters as a global top-level page without context.
+
+Route structure teaches the product model.
+
+---
+
+## Step 8 — Reuse shared design foundations instead of writing one-off UI
+
+### What we did
+
+All teacher management screens reused the shared visual building blocks from earlier features.
+
+That means we did **not** build a separate teacher-only visual system. We stayed consistent with the design foundation already established in:
+
+- cards
+- buttons
+- text variants
+- badges
+- empty states
+- spacing tokens
+- loading states
+
+### Why we did it
+
+This was explicitly required by scope, and it also protects long-term maintainability.
+
+If each new feature invents its own visual conventions, the app quickly starts to feel inconsistent and harder to refactor.
+
+### React / Next.js note
+
+This is the same reason a web app should reuse a shared component library rather than giving every feature its own custom buttons, inputs, and cards.
+
+Consistency is not just aesthetic. It reduces mental overhead for future implementation.
+
+---
+
+## Step 9 — Solve the navigation structure problem correctly
+
+### What we did
+
+During implementation, the first attempt used a redirect-style tab screen for teacher courses.
+
+That looked something like:
+
+- teacher tab screen mounts
+- `useEffect` immediately calls `router.push(...)`
+- loading screen appears while redirecting
+
+This caused bad behavior:
+
+- native back arrow became unreliable
+- returning to the tab caused loops or loading states
+- the user could land on a redirect screen rather than a real list screen
+
+The fix was to make the teacher courses tab itself a **real course list screen**.
+
+Final structure:
+
+- `app/(teacher)/courses.tsx` → real teacher course list screen
+- `app/teacher-course/new.tsx` → create course
+- `app/teacher-course/[courseId]/edit.tsx` → edit course
+- `app/teacher-course/[courseId]/lessons/index.tsx` → lesson list
+- `app/teacher-course/[courseId]/lessons/new.tsx` → create lesson
+- `app/teacher-course/[courseId]/lessons/[lessonId]/edit.tsx` → edit lesson
+
+### Why we did it
+
+This is the most important architectural lesson in the feature.
+
+The course list belongs inside the teacher tab structure because it is a true top-level teacher destination.
+
+But the create/edit/lessons flows belong outside the tab tree because they are deeper pushed screens that need clean native back behavior.
+
+Once the list lived inside the tab and the detail flows lived outside, navigation became stable and natural.
+
+### React / Next.js note
+
+For a web developer, think of this like the difference between:
+
+- a sidebar section page
+- a nested detail workflow that should preserve navigation history correctly
+
+Trying to use a redirect page as the main tab entry is like using a page whose only job is “on mount, send the user elsewhere.” It can work in limited cases, but it becomes fragile when the page is revisited as part of normal app navigation.
+
+---
+
+## Step 10 — Fix form behavior details that are more mobile-specific
+
+### What we did
+
+While testing, a keyboard/input issue appeared in the course form.
+
+The fix was to move the local `FormField` helper component outside the form component body so it would not be recreated on each render in a way that affected input focus behavior.
+
+We also used scroll containers and keyboard-safe behavior so forms stayed usable on mobile.
+
+### Why we did it
+
+This is a good example of how mobile form behavior can differ from browser behavior.
+
+A form can look correct visually but still feel broken if focus, keyboard interaction, or re-render timing is off.
+
+### React / Next.js note
+
+Web developers are often used to the browser doing a lot of form behavior for free. In React Native, you have to be more aware of:
+
+- controlled inputs
+- focus behavior
+- keyboard overlap
+- scroll containers
+- rerender side effects on mobile interaction
+
+The good news is the mental model is still React. The difference is that mobile UX details surface earlier.
+
+---
+
+## Step 11 — Confirm what “save” means in the mock-data-first phase
+
+### What we did
+
+We intentionally kept save behavior mock-only.
+
+That means create and edit actions currently:
+
+- validate input
+- call a mock data-layer mutation function
+- show success UI
+- navigate back
+
+But they do **not** truly persist after a full app reload or restart.
+
+### Why we did it
+
+Because the project is still in the mock-data-first phase.
+
+The goal of this feature was to prove:
+
+- the UI shape
+- the form fields
+- the route structure
+- the teacher workflow
+- the data contract shape
+
+It was **not** to prematurely introduce real persistence.
+
+### React / Next.js note
+
+This is similar to building an admin UI against local mock services before wiring it to the real API.
+
+The difference between “workflow complete” and “backend complete” must stay explicit, otherwise teams mistakenly believe a feature is production-ready when only the UI path is ready.
+
+---
+
+## Step 12 — Verify Arabic first, then English
+
+### What we did
+
+We tested the full flow in Arabic first because Arabic is the default product experience.
+
+That included checking:
+
+- course list labels
+- form labels
+- form validation messages
+- lesson management labels
+- badges
+- action buttons
+- tab labels
+- back behavior
+- visual RTL layout
+
+After Arabic was confirmed, we switched to English and tested the same flow again.
+
+### Why we did it
+
+Arabic-first is a product rule, not an optional final test step.
+
+If RTL and translation-key discipline are not checked during the feature itself, layout issues and localization gaps become much harder to clean up later.
+
+### React / Next.js note
+
+In many web projects, internationalization is tested mostly at the text layer. In an Arabic-first mobile app, language choice also changes the spatial feel of the app.
+
+That means localization testing is partly UI testing, not just copy verification.
+
+---
+
+## Final output of Feature 12
+
+At the end of this feature, the app had:
+
+- a real teacher courses tab screen
+- a teacher course management list UI
+- mock create course UI
+- mock edit course UI
+- mock lesson management list UI
+- mock create lesson UI
+- mock edit lesson UI
+- translation coverage for all visible text in Arabic and English
+- shared UI foundation reuse across all teacher management screens
+- mock data-layer helpers for teacher course and lesson operations
+- route structure that preserves native back behavior correctly
+- confirmed Arabic-first and English-secondary testing coverage
+
+This feature did **not** add:
+
+- real persistence
+- Supabase integration
+- Clerk integration
+- real media upload
+- real image picker workflow
+- real video upload flow
+
+That was intentional and correct for the current project phase.
+
+---
+
+## Completion checklist for Feature 12
+
+Feature 12 is complete when all of these are true:
+
+- the teacher can open the teacher area
+- the teacher can open the courses tab
+- the course list loads in Arabic by default
+- add course opens a working mock create form
+- edit course opens a prefilled mock edit form
+- manage lessons opens the lesson list for the chosen course
+- add lesson opens a working mock lesson form
+- edit lesson opens a prefilled mock lesson form
+- all visible text comes from translation keys
+- Arabic-first RTL layout works correctly
+- English still works when switched
+- screens use shared design primitives rather than one-off UI
+- data reads and mock mutations live in the mock data layer
+- create/edit/lesson detail flows show correct native back behavior
+- save behavior is clearly understood to be mock-only for now
+- TypeScript passes cleanly after implementation
+
+---
+
+## Lessons from Feature 12
+
+### Lesson 1 — In mobile apps, route placement strongly affects UX
+
+The biggest practical lesson from this feature was that route placement matters.
+
+Even when all the screens exist, the UX can still feel broken if a top-level destination is implemented as a redirect screen instead of a real screen.
+
+### Lesson 2 — The list screen is the anchor of a CRUD-like flow
+
+The management list is not just another page. It is the return point and mental anchor for create/edit flows.
+
+That is why it needed to live as a real teacher tab screen.
+
+### Lesson 3 — Mock-data-first still requires real architecture
+
+Even without backend persistence, the feature still needed disciplined structure:
+
+- translation files
+- route clarity
+- reusable forms
+- data-layer helpers
+- shared UI reuse
+
+Mock-first should not mean messy-first.
+
+### Lesson 4 — React Native forms require more UX awareness than web forms
+
+The form components looked conceptually familiar to a web developer, but keyboard and focus behavior required more care.
+
+That is normal in React Native and becomes easier once you start thinking in mobile interaction patterns rather than browser defaults.
+
+---
+
+## Official references used during this feature
+
+- Expo Router Stack: https://docs.expo.dev/router/advanced/stack/ [web:95]
+- Expo Router navigation basics: https://docs.expo.dev/router/basics/navigation/ [web:38]
+- Expo Router dynamic routes and params: https://docs.expo.dev/router/advanced/dynamic-routes/
+- React Native TextInput: https://reactnative.dev/docs/textinput
+- React Native Switch: https://reactnative.dev/docs/switch
+- React Native ScrollView: https://reactnative.dev/docs/scrollview
+- Expo Vector Icons guide: https://docs.expo.dev/guides/icons/ [web:42]
+
+---
