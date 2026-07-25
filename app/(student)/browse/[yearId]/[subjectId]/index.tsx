@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import type { Course } from "../../../../lib/types";
-import { getCoursesBySubject } from "../../../../lib/mock-data/student";
-import { t } from "../../../../lib/i18n";
+import { Course } from "../../../../../lib/types";
+import { getCoursesBySubject } from "../../../../../lib/mock-data";
+import { t } from "../../../../../lib/i18n";
 import {
   AppText,
   Card,
   EmptyState,
   LoadingScreen,
   StatusBadge,
-} from "../../../../components/ui";
-import { Spacing } from "../../../../constants/design";
+} from "../../../../../components/ui";
+import { Spacing } from "../../../../../constants/design";
 
 export default function CoursesScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -57,7 +57,12 @@ export default function CoursesScreen() {
           <TouchableOpacity
             className="mb-3 active:opacity-70"
             accessibilityRole="button"
-            onPress={() => router.push(`/(student)/course/${item.id}`)}
+            onPress={() =>
+              router.push({
+                pathname: "/student-course/[courseId]",
+                params: { courseId: item.id },
+              })
+            }
           >
             <Card>
               <View className="flex-row justify-between items-start">

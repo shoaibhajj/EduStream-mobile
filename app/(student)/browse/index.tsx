@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { View, FlatList, TouchableOpacity } from "react-native";
-import { AppText, Card, LoadingScreen, EmptyState } from "../../components/ui";
-import { Spacing } from "../../constants/design";
+import { AppText, Card, LoadingScreen, EmptyState } from "../../../components/ui";
+import { Spacing } from "../../../constants/design";
 import { useRouter } from "expo-router";
-import type { AcademicYear } from "../../lib/types";
-import { getAcademicYears } from "../../lib/mock-data/student";
-import { t } from "../../lib/i18n";
-import { setLanguage, currentLocale } from "../../lib/i18n";
+import type { AcademicYear } from "../../../lib/types";
+import { getAcademicYears } from "../../../lib/mock-data/student";
+import { t } from "../../../lib/i18n";
+import { setLanguage, currentLocale } from "../../../lib/i18n";
 
 
 
@@ -54,7 +54,7 @@ function toggleLang() {
         renderItem={({ item }) => (
           <TouchableOpacity
             className="mb-3 active:opacity-70"
-            onPress={() => router.push(`/(student)/${item.id}`)}
+            onPress={() => router.push(`/(student)/browse/${item.id}`)}
           >
             <Card>
               <AppText variant="sectionTitle">{item.name}</AppText>

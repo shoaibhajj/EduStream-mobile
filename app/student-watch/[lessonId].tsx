@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { t } from "../../../lib/i18n";
+import { t } from "../../lib/i18n";
 
 export default function WatchScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();

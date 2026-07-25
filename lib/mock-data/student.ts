@@ -364,3 +364,20 @@ export async function getMyConfirmedCourseIds(): Promise<string[]> {
     (e) => e.courseId
   );
 }
+
+/**
+ * Returns Course objects for all confirmed enrollments.
+ * Shape mirrors what a Supabase join (enrollments → courses) would return.
+ */
+export async function getMyEnrolledCourses(): Promise<Course[]> {
+  const confirmed = await getMyConfirmedCourseIds();
+  return COURSES.filter((c) => confirmed.includes(c.id));
+}
+
+/**
+ * Returns a small slice of courses to feature on the home screen.
+ * In the real backend this will be a curated or popularity-sorted query.
+ */
+export async function getFeaturedCourses(): Promise<Course[]> {
+  return COURSES.slice(0, 3);
+}

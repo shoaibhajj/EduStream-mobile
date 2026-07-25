@@ -2,11 +2,11 @@
 
 
 ## Current Status
-Feature 07 complete — The mock data layer is now structured under `lib/mock-data/` with clear separation for shared reference data, student queries, teacher queries, and profile queries. Existing student screens still show the same visible behavior, but now load through a cleaner async mock-data layer designed to be swapped with real backend implementations later. Arabic remains the default experience, English still works through the toggle, and local verification passed with clean TypeScript and no Metro console errors.
+Feature 08 complete — The student home screen is now the default student landing experience, built with mock-data-driven overview sections for enrolled courses, pending enrollments, and featured courses. The student area now uses a cleaner Expo Router structure with Home and Browse as the visible tab entry points, while course and watch detail screens were moved outside the tab tree so they remain reachable without appearing in the bottom navigation. Arabic remains the default experience, RTL was verified first, English still works, and local verification passed after the navigation restructure and typed-route fixes. 
 
 
 ## Next Up
-Feature 08 — Build Student Home Screen
+Feature 09 — Build Subject/Course Browsing Screens
 
 
 ## Build Progress
@@ -20,6 +20,7 @@ Feature 08 — Build Student Home Screen
 - 05 — Build Course Detail + Lesson List + Preview/Locked States
 - 06 — Build Shared Design Foundations
 - 07 — Create Mock Data Layer
+- 08 — Build Student Home Screen
 
 
 ### In Progress
@@ -27,7 +28,6 @@ Feature 08 — Build Student Home Screen
 
 
 ### Not Started
-- 08 — Build Student Home Screen
 - 09 — Build Subject/Course Browsing Screens
 - 10 — Build Course Detail and Lessons Screens
 - 11 — Build Teacher Home Screen
@@ -82,6 +82,18 @@ Feature 08 — Build Student Home Screen
 - Confirmed the existing student browse and course detail flow still works after the mock-data refactor.
 - Confirmed Arabic remains the default app experience after the refactor, and English still works through the existing toggle.
 - Verified the new `shared.ts`, `teacher.ts`, and `profile.ts` files are intentionally structural for upcoming features and do not need visible UI yet.
+- Built the student home screen as the new default landing screen for student users using mock-data-driven sections for enrolled courses, pending enrollments, and featured courses.
+- Added home-screen-specific mock query helpers in `lib/mock-data/student.ts` so home data stays inside the mock data layer and remains easy to replace with a real backend later.
+- Added all student home visible strings to `lib/i18n/ar.ts` and `lib/i18n/en.ts` with Arabic-first coverage and English fallback support.
+- Added a student tabs layout so Home and Browse are the only visible student entry points in bottom navigation.
+- Moved browse flow screens under `app/(student)/browse/` so the browse experience owns its own nested stack without flattening every route into the tab bar.
+- Moved course detail and watch screens out of the student tab tree into top-level dynamic routes so they remain navigable but no longer appear as visible tabs.
+- Updated student navigation calls to use the new route structure and corrected Expo Router typed-route usage for dynamic params.
+- Confirmed the app now opens to the student home screen by default through the root redirect.
+- Confirmed students can navigate from Home to Browse, then into Year → Subject → Course Detail → Watch flow after the route restructure.
+- Confirmed Arabic home layout was visually tested first in RTL, then rechecked in English after the same navigation changes.
+- Confirmed mock-data-driven content renders on Home without embedding arrays directly in the screen component.
+- Confirmed the tab bar now shows only the intended student destinations instead of detail routes.
 
 
 ## Architecture Decisions
@@ -99,6 +111,8 @@ Feature 08 — Build Student Home Screen
 - Spacing, radius, and typography size tokens used outside `className` contexts live in `constants/design.ts`; color tokens remain the single responsibility of `constants/colors.ts` and `tailwind.config.js`.
 - Mock data is now intentionally separated by concern under `lib/mock-data/` so upcoming student home, teacher dashboard, and profile/payment screens can import stable query-like functions instead of embedding ad hoc arrays in screen files.
 - `shared.ts` owns reusable academic hierarchy lookup data, while `student.ts`, `teacher.ts`, and `profile.ts` own role-specific query functions.
+- The student area now uses a tabs-plus-nested-browse-stack structure: visible student entry points stay in the tab bar, while detail routes live outside the tab tree and are pushed as standalone dynamic screens.
+- Dynamic navigation should follow Expo Router typed-route-safe patterns for parameterized screens when string interpolation causes route typing conflicts.
 
 
 ## Notes / Risks
@@ -112,3 +126,5 @@ Feature 08 — Build Student Home Screen
 - The Watch screen is a placeholder only. Real video playback (`expo-av` + WebView embed) is deferred to a later feature. The screen already receives the correct `lessonId` param via Expo Router dynamic routing.
 - Going forward, any new screen that needs a card, button, badge, empty state, or loading spinner must import from `components/ui/` rather than writing new inline Tailwind class strings, to keep the design system from fragmenting again.
 - The new `teacher.ts` and `profile.ts` mock modules are expected to have no visible effect until the teacher, home, profile, and payment-related screens are implemented.
+- Expo Router route restructuring can easily create confusion between route groups, visible tabs, and standalone detail routes; future navigation changes should keep top-level destinations and pushed detail screens clearly separated.
+- Dynamic routes should be rechecked with TypeScript after any file move so generated typed-route definitions stay aligned with the current app tree.

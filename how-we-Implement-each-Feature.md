@@ -4450,7 +4450,7 @@ import { spacing } from "../../../constants/design";
 function LessonItem({ lesson }: { lesson: Lesson }) {
   const handlePress = () => {
     if (lesson.isPreview) {
-      router.push(`/(student)/watch/${lesson.id}`);
+    router.push(`/student-watch/${lesson.id}`);
       return;
     }
 
@@ -5394,3 +5394,977 @@ Feature 07 is complete when all of these are true:
 
 
 
+-----
+
+# Feature 08 — Build Student Home Screen
+
+## What this feature does
+
+This feature adds the first real **student landing screen** for the EduStream mobile app.
+
+Up to this point, the student experience could browse:
+- academic years
+- subjects
+- courses
+- course detail
+- lesson preview routes
+
+But the app still did not have a real “home” entry point for the student role.
+
+Feature 08 introduces that missing app-entry experience by building a dedicated Student Home Screen that:
+- becomes the main landing screen for student users
+- shows a greeting/top section
+- shows mock-data-driven overview blocks
+- gives quick navigation entry points into the existing student flow
+- reuses the shared design foundations from Feature 06
+- reads data from the mock data layer created in Feature 07 instead of embedding screen-specific data directly
+
+This feature remains fully inside the **mock-data-first phase**.
+
+It does **not** add:
+- Supabase
+- Clerk
+- real auth
+- real user profiles
+- real recommendation logic
+- teacher home features
+- backend integration
+
+The final success condition for this feature is:
+- the app opens to a student home screen
+- Arabic is the default visible experience
+- the screen uses translation keys for all visible UI text
+- the screen renders mock-data-driven content
+- the home screen can navigate into the existing student flow
+- the UI remains visually consistent with the shared design system
+- the same screen still works in English after switching language
+
+---
+
+## Why this feature matters
+
+A student-facing app usually needs two different things:
+
+1. a **browse flow**
+2. a **home / dashboard entry point**
+
+Before this feature, EduStream had the browse flow, but not the true entry point.
+
+That meant the app structure was still missing an important product layer:
+the student could navigate through the content tree, but the experience did not yet feel like a real student app that opens into a useful personal overview.
+
+This feature matters because the home screen becomes the place where the app can eventually answer questions like:
+- What am I already enrolled in?
+- What should I continue learning?
+- Do I have pending enrollments?
+- What should I look at next?
+
+Even in a mock-data-first phase, that screen is important because it establishes:
+- the main student starting point
+- the relationship between personal data and content navigation
+- the future shape of a backend-driven student dashboard
+
+For a React / Next.js engineer, this is similar to the difference between:
+- a content listing route
+and
+- a personalized authenticated dashboard entry page
+
+But in React Native, the home screen has an even stronger role because it often becomes:
+- the first thing the user sees after opening the app
+- the first tab in the main navigation
+- the anchor point for future student engagement patterns
+
+So this feature is not just another screen.
+It is the first step toward a real student app shell.
+
+---
+
+## Original implementation plan
+
+The implementation plan for this feature became:
+
+1. Re-read the latest repo documents from GitHub before changing anything
+2. inspect the current student route structure and the current app entry behavior
+3. inspect the mock data layer from Feature 07 to see what home-screen data already exists
+4. decide the smallest navigation update needed to make Home the real student entry point
+5. add any small home-specific query helpers inside the mock data layer
+6. create the Student Home Screen route
+7. render overview sections using mock-data-layer functions only
+8. reuse the shared UI primitives and design tokens from Feature 06
+9. make all visible text come from translation files
+10. verify Arabic first, then English
+11. confirm the home screen routes cleanly into the existing student flows
+
+Important constraints remained active during this feature:
+- Arabic is the default language
+- English is secondary
+- all visible UI text must use translation keys
+- avoid hardcoded directional assumptions that break RTL
+- use mock data only
+- keep home-specific query helpers inside the mock data layer
+- do not expand into teacher work, profile work, or backend work
+- build only the home screen and the smallest support changes needed for it to work
+
+---
+
+## Step 1 — Re-read the repo documents before implementation
+
+### What we did
+
+Before changing code, we re-read the latest versions of:
+- `mobile-project-overview.md`
+- `mobile-architecture.md`
+- `mobile-code-standards.md`
+- `mobile-ui-context.md`
+- `mobile-build-plan.md`
+- `mobile-progress-tracker.md`
+- `mobile-ai-workflow-rules.md`
+
+### Why we did it
+
+This mattered for several reasons.
+
+First, the repo instructions explicitly said the **current numbering and order from `mobile-progress-tracker.md`** must be treated as the source of truth.
+
+That was important because the project had already inserted the Arabic-first localization feature earlier, which shifted the later feature numbering. Relying on earlier chat memory would have risked implementing the wrong feature number or the wrong sequence.[file:64]
+
+Second, the docs confirmed that the app is still in the **mock-data-first phase**, which means this feature had to avoid:
+- Supabase
+- Clerk
+- any real backend assumptions
+
+Third, the docs confirmed that Arabic-first is not optional. It is a standing implementation rule for all future features, including:
+- Arabic as the default language
+- English as a secondary language
+- translation keys for all visible text
+- RTL-safe layout decisions
+- no hardcoded visible strings in screens or reusable components.[file:64]
+
+### Engineering note
+
+This step may feel repetitive, but it is one of the most important habits in repo-driven work.
+
+In mobile projects especially, implementation rules often live across several documents:
+- architecture
+- UI context
+- build plan
+- workflow rules
+- tracker status
+
+Re-reading them before each feature is what prevents “correct code, wrong feature” mistakes.
+
+---
+
+## Step 2 — Inspect the current student app structure before adding Home
+
+### What we did
+
+We inspected the current student route structure and the existing app entry behavior.
+
+At the start of this feature, the student route group already had:
+- Academic Years screen
+- Subjects screen
+- Courses screen
+- Course Detail screen
+- Watch placeholder / lesson route
+
+But the student group did **not** yet have a dedicated home route as the proper student entry point.
+
+The effective student landing path still behaved like the browse flow entry, not like a real student home screen.
+
+### Why we did it
+
+This inspection was necessary because the home feature had two jobs, not one:
+
+1. build the screen itself
+2. make that screen the real student entry point
+
+If we built only a `home.tsx` file without adjusting the student navigation structure, then the feature would be incomplete.
+The screen would exist in the codebase, but it would not actually function as the student’s main landing experience.
+
+### Why this matters
+
+This is a useful frontend distinction:
+
+- **screen exists** is not enough
+- **screen is part of the product flow** is what really matters
+
+For this feature, “build the home screen” actually included a navigation responsibility:
+the app had to land there naturally.
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to realizing that creating `/dashboard.tsx` is not enough if the app still redirects users to `/courses` on entry.
+
+In Expo Router, the idea is similar, but the runtime effect is more app-shell-like:
+the landing screen is part of the native navigation structure, not just a page reachable by URL.
+
+---
+
+## Step 3 — Inspect Feature 07 mock data and decide what the Home screen needs
+
+### What we did
+
+We reviewed the mock data layer built in Feature 07 to understand what data was already available and what the home screen still needed.
+
+The existing mock layer already gave the project strong student-flow data such as:
+- course data
+- lessons
+- enrollments
+- subject and year relationships
+- confirmed enrollment helpers
+
+That meant the home screen did **not** need embedded arrays directly inside the screen.
+
+However, the home screen still needed home-friendly query functions such as:
+- confirmed enrolled courses in full course-object form
+- a small featured / recommended course slice
+- pending enrollment information in a format easy for the screen to render
+
+### Why we did it
+
+This step mattered because Feature 08 had a strict scope rule:
+
+the screen must read from the **mock data layer**, not embed screen-specific mock data directly in the route component.
+
+So instead of putting home-specific arrays inside the screen file, the cleaner approach was:
+- keep screen-specific rendering in the screen
+- keep home-specific data access helpers inside the mock data layer
+
+### Why this matters
+
+This is one of the most important architectural habits in the mock-data-first phase.
+
+The point of a mock layer is not just to “have fake data.”
+The point is to preserve a future-friendly boundary between:
+- where data comes from
+- how UI renders it
+
+That allows the future backend replacement to swap the source without rewriting the screen architecture.
+
+### React vs React Native note
+
+For a React / Next.js engineer, this is similar to the difference between:
+- putting temporary inline arrays in a page component
+and
+- creating a small local repository / service helper that returns the shape the page needs
+
+The second option scales better, and that same principle applies here.
+
+---
+
+## Step 4 — Add small home-specific query helpers to the mock data layer
+
+### What we did
+
+We added the smallest missing query helpers to `lib/mock-data/student.ts` so the home screen could stay clean.
+
+The important helpers added for this feature were:
+
+- `getMyEnrolledCourses()`
+- `getFeaturedCourses()`
+
+The first helper converted the already-known confirmed enrollment IDs into full course objects.
+The second helper returned a small featured course slice suitable for the home screen.
+
+### Why we did it
+
+The home screen needed display-ready data.
+
+It was technically possible to do this data shaping directly inside the screen, but that would have violated the feature rule that home-screen-specific helper/query logic should stay inside the mock data layer when needed.
+
+By adding these functions to the mock layer, we preserved the separation:
+
+- mock layer = fetch / shape data
+- screen = load state, render, navigate
+
+### Why this matters
+
+This is exactly the kind of small abstraction that helps later.
+
+Today:
+- `getFeaturedCourses()` might return `COURSES.slice(0, 3)`
+
+Later:
+- it might call Supabase
+- sort by recommendation logic
+- filter by student profile
+- merge recent activity
+
+The screen can keep calling the same function name.
+
+### Engineering note
+
+This is a strong example of the “minimum useful abstraction” rule.
+
+We did **not** build a full student dashboard service layer.
+We added only the two helpers the screen truly needed.
+
+That kept the feature within scope.
+
+---
+
+## Step 5 — Add translation keys for the home screen
+
+### What we did
+
+We added new translation keys in both:
+- `lib/i18n/ar.ts`
+- `lib/i18n/en.ts`
+
+These keys covered the home-screen UI text, including:
+- greeting text
+- subtitle text
+- section headers
+- empty-state text
+- pending-enrollment label
+- continue-learning label
+- browse CTA
+- lesson-count label
+- small helper labels used in the new screen
+
+### Why we did it
+
+Feature 04 created a permanent implementation rule:
+
+**all visible UI text must come from translation files**
+
+That rule still applied here, and the Feature 08 requirements repeated it explicitly.
+
+So the home screen could not introduce strings like:
+- `Welcome back`
+- `Continue Learning`
+- `Featured Courses`
+- `Browse Courses`
+
+directly inside JSX.
+
+Everything visible had to come through translation keys so that:
+- Arabic is the default experience
+- English remains testable
+- future localization stays maintainable
+- the screen remains consistent with the Arabic-first architecture
+
+### Why this matters
+
+This feature is a good example of why localization is not a one-time task.
+
+Once the localization foundation exists, every new feature must participate in it.
+That means translation work becomes part of normal feature delivery, not a separate later cleanup step.
+
+### React vs React Native note
+
+This is conceptually familiar to any React engineer who has used i18n dictionaries.
+
+The mobile-specific twist is that screen density is tighter, so translation choices affect layout more quickly.
+A section title that looks harmless in English can alter spacing and row balance in Arabic on a small device much faster than on the web.
+
+---
+
+## Step 6 — Update the student route group so Home becomes the real entry point
+
+### What we did
+
+We created a student route layout and made the student flow behave like a proper app section with Home as the main entry point.
+
+The key change was adding a dedicated student group layout:
+- `app/(student)/_layout.tsx`
+
+This layout defined the student navigation structure and allowed:
+- `home.tsx` to exist as the student home route
+- the current `index.tsx` to continue serving the browse flow
+- nested dynamic routes such as course and watch screens to stay reachable without polluting the main entry UI
+
+### Why we did it
+
+This was the smallest navigation change that made the feature real.
+
+Without this change:
+- the app could still open into the old browse entry
+- the new home screen would exist but not truly act as the student entry point
+
+So this step was required to satisfy the feature’s central requirement:
+the student home screen must be the proper landing screen.
+
+### Why this matters
+
+This step is a good reminder that navigation structure is part of product behavior.
+
+A home screen is not defined only by what it contains.
+It is also defined by where it sits inside the route tree and how the app enters it.
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to changing the layout and route flow so the user lands in the correct dashboard shell rather than a content index page.
+
+In Expo Router, this route-tree decision affects native navigation behavior and tab / stack structure, not just browser route organization.
+
+---
+
+## Step 7 — Build the Student Home Screen itself
+
+### What we did
+
+We created:
+- `app/(student)/home.tsx`
+
+This screen became the student home route and loaded three categories of mock data:
+- enrolled courses
+- pending enrollments
+- featured courses
+
+The screen used local loading state and loaded data in `useEffect` through async mock-data-layer functions.
+
+The visual structure included:
+- a greeting / top section
+- a continue-learning section
+- a pending-enrollments section
+- a featured-courses section
+- a CTA that routes back into the browse flow
+
+### Why we did it
+
+This structure matched the feature scope while staying intentionally small.
+
+The requirements suggested possible overview blocks such as:
+- enrolled courses
+- pending enrollments
+- quick access to continue learning
+- featured or recommended courses
+
+But the same requirements also warned against adding too many blocks.
+
+So the right implementation choice was to build a clean useful home screen with a few high-value sections rather than trying to simulate a complex dashboard too early.
+
+### Why this matters
+
+This is one of the most important product decisions in the feature:
+
+**a home screen should feel useful, not crowded**
+
+Especially in early mobile app development, adding too many home widgets usually creates:
+- visual noise
+- duplicated logic
+- weak prioritization
+- scope creep
+
+A smaller home screen with a clear student purpose is usually better.
+
+### Engineering note
+
+The screen also included loading-friendly behavior through the shared loading primitive rather than assuming mock data means loading states do not matter.
+
+That is the correct architectural choice because later the same screen will load from a real backend.
+
+---
+
+## Step 8 — Reuse the shared design foundation from Feature 06
+
+### What we did
+
+Instead of building the Home screen with one-off layout and text styling, we reused the shared UI foundation already created in Feature 06, including patterns such as:
+- `AppText`
+- `Card`
+- `PrimaryButton`
+- `EmptyState`
+- `LoadingScreen`
+- shared spacing values from `constants/design.ts`
+
+### Why we did it
+
+Feature 08 explicitly required reuse of the shared design foundation.
+
+That was important both visually and architecturally.
+
+Visually, it ensured the new home screen feels like part of the same student app as:
+- Academic Years
+- Subjects
+- Courses
+- Course Detail
+
+Architecturally, it prevented new duplication from creeping back into the codebase after Feature 06 had already extracted the shared UI layer.
+
+### Why this matters
+
+A reusable UI foundation only proves its value when new features actually use it.
+
+If the home screen had been built with fresh standalone patterns, then the project would start fragmenting again immediately.
+
+So this feature also served as a test of whether Feature 06 was strong enough to support a new app-entry screen.
+
+### React vs React Native note
+
+For a web engineer, this is similar to checking whether the new dashboard page can be built cleanly from the existing design-system primitives rather than writing raw repeated utility markup again.
+
+The same reuse principle applies here, just through React Native components rather than DOM elements.
+
+---
+
+## Step 9 — Add navigation entry points from Home into the existing student flows
+
+### What we did
+
+We connected the Home screen into the existing student navigation paths.
+
+That included:
+- tapping enrolled or featured courses to open Course Detail
+- providing a CTA to move into the browse flow
+- preserving access to the existing student journey rather than creating a disconnected “dashboard-only” screen
+
+### Why we did it
+
+The home screen is not supposed to replace the rest of the student app.
+It is supposed to become the front door to it.
+
+So the screen needed clear navigation entry points that help the student move from overview into action.
+
+That is why the feature requirement specifically called for:
+- quick access to continue learning
+- entry points into existing student flows
+
+### Why this matters
+
+A home screen that only displays summary information but does not help the user go anywhere useful is not a strong home screen.
+
+This feature made sure Home is:
+- informative
+- actionable
+- connected to the rest of the student route tree
+
+### React vs React Native note
+
+This is similar to wiring dashboard cards on the web into deeper routes.
+
+The difference in mobile is that touch targets and screen transitions matter more, so the home blocks need to feel like clear tappable actions, not just informational cards.
+
+---
+
+## Step 10 — Keep the layout Arabic-first and RTL-safe
+
+### What we did
+
+We built the home screen with Arabic-first behavior in mind from the start.
+
+That meant:
+- Arabic text is the default visible experience
+- all visible labels come from translation keys
+- layout choices avoid English-first left/right assumptions
+- spacing and row composition remain safe in RTL
+- English is still available for secondary testing
+
+We avoided introducing layout decisions that depend on LTR-only thinking, such as:
+- hardcoded `marginLeft` / `marginRight`
+- row composition that only looks balanced in English
+- directional assumptions hidden inside reusable UI pieces
+
+### Why we did it
+
+This feature sits directly on top of the localization foundation created earlier, so it had to behave correctly in RTL from day one.
+
+Retrofitting RTL after a screen is already built is always more expensive.
+
+### Why this matters
+
+The home screen is one of the most visible surfaces in the app.
+If RTL behavior is weak there, the whole product feels less intentional.
+
+This is especially true in Arabic-first apps because the home screen is the first thing users see.
+
+### React vs React Native note
+
+For a web engineer, this is similar in principle to using logical CSS properties and testing under `dir="rtl"`.
+
+In React Native, the lesson is the same conceptually:
+use start/end-safe thinking and test the real mobile screen in RTL instead of trusting assumptions.
+
+---
+
+## Step 11 — Verify loading, empty, and real content states
+
+### What we did
+
+We made sure the Home screen did not assume “mock data means happy path only.”
+
+The implementation included support for:
+- loading behavior
+- empty-state behavior for sections with no enrolled courses
+- conditional rendering for pending enrollments
+- normal populated-state rendering for the main content sections
+
+### Why we did it
+
+The feature requirements explicitly said to include empty/loading-friendly structure if needed, even though mock data loads quickly.
+
+That was an important instruction because fast local mock data can trick a project into ignoring real app-state discipline.
+
+### Why this matters
+
+This step protects the feature from future backend pain.
+
+When the screen eventually moves from mock data to a real backend, it will already know how to handle:
+- waiting
+- no data
+- partial data
+
+That is a much better outcome than rewriting the whole screen later.
+
+### Engineering note
+
+This is one of the strongest habits a frontend engineer can build:
+treat temporary data sources as a rehearsal for real application states.
+
+---
+
+## Step 12 — Verify the feature locally in Arabic first, then English
+
+### What we did
+
+After implementation, we verified the feature locally with these checks:
+
+1. the app opens and lands on the student home screen
+2. the home screen appears in Arabic by default
+3. mock-data-driven content is visible on the home screen
+4. enrolled / continue-learning content renders correctly
+5. pending enrollment content renders correctly when present
+6. featured-course cards render correctly
+7. tapping a course opens the existing Course Detail flow
+8. the browse CTA reaches the existing student browse flow
+9. the visual styling matches the shared design foundation
+10. RTL layout still looks correct in Arabic
+11. switching to English still renders the same screen cleanly
+12. the screen still behaves correctly after the language switch
+
+### Why we did it
+
+This converted the feature from implementation work into a real completion check.
+
+A home screen feature is not complete when:
+- the file exists
+- the JSX compiles
+- the mock functions return data
+
+It is complete when the screen behaves like a real app entry point in both supported languages.
+
+### Why this matters
+
+This step is especially important for Arabic-first apps because a feature can “work” technically while still failing product expectations through:
+- hardcoded leftover strings
+- weak RTL layout
+- poor spacing balance
+- navigation gaps
+- inconsistent reuse of design primitives
+
+Testing both Arabic and English is what proves the feature is truly integrated.
+
+---
+
+## Problems encountered
+
+### Problem 1 — The app already had a student browse entry, but not a real student home entry
+
+The student flow was already functional, which can create the illusion that a home screen is just another screen file.
+
+But this feature required the home screen to become the **actual landing point**, not just an additional route.
+
+### Why this mattered
+
+That meant navigation structure had to change slightly, not only UI rendering.
+
+Without that structural change, the feature would have been visibly incomplete.
+
+---
+
+### Problem 2 — The mock data layer was strong, but not yet shaped exactly for home-screen use
+
+Feature 07 already gave the project a much cleaner mock data foundation.
+
+However, a home screen often needs “overview-friendly” queries, not only raw entity relationships.
+
+For example:
+- enrolled course IDs are useful
+- but the Home screen usually needs enrolled **course cards**
+- course arrays exist
+- but the Home screen needs a small “featured” slice with a stable query helper
+
+### Why this mattered
+
+If the screen started doing too much shaping locally, it would weaken the architecture that Feature 07 was meant to establish.
+
+---
+
+### Problem 3 — It was easy to let the home screen grow too large
+
+A home/dashboard feature naturally invites extra ideas such as:
+- profile summary
+- notifications
+- learning streaks
+- payment reminders
+- teacher recommendations
+- recent watches
+- account widgets
+
+### Why this mattered
+
+The feature had a strict scope rule:
+build only the student home screen and the minimal supporting pieces required for it to work.
+
+So the main challenge was not adding enough.
+It was resisting the temptation to add too much.
+
+---
+
+### Problem 4 — Arabic-first requirements apply hardest on app-entry screens
+
+A home screen contains many short labels, blocks, CTA text, and directional layouts.
+
+That makes it one of the easiest places for localization discipline to break through:
+- hardcoded strings
+- LTR-biased spacing
+- weak English fallback handling
+- sections that look balanced in one language but awkward in another
+
+### Why this mattered
+
+Because the Home screen is such a visible surface, any Arabic-first mistake there would immediately reduce product quality.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Treat navigation structure as part of the feature, not a separate task
+
+We solved the “home exists but is not the landing screen” problem by making the student route structure responsible for the correct entry behavior.
+
+That kept the feature honest:
+the screen is now part of the real student app flow, not just a detached route.
+
+---
+
+### Solution 2 — Add only the smallest missing home helpers to the mock layer
+
+Instead of moving data-shaping logic into the screen, we added only the small missing query helpers the home screen truly needed.
+
+That preserved the architecture from Feature 07 while avoiding overengineering.
+
+---
+
+### Solution 3 — Keep the screen intentionally small and useful
+
+We solved the scope-creep risk by limiting the screen to a few high-value blocks:
+- greeting
+- continue learning / enrolled courses
+- pending enrollments
+- featured courses
+- browse CTA
+
+That gave the app a useful home screen without turning the feature into a full dashboard system.
+
+---
+
+### Solution 4 — Apply the Arabic-first rules from the first line of JSX
+
+Instead of building the screen in English and translating later, we treated Arabic-first behavior as a first-order implementation rule:
+- translation keys from the beginning
+- RTL-safe layout from the beginning
+- Arabic testing first
+- English verification second
+
+That prevented later cleanup work.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — A home screen is more than a screen component
+
+A web engineer may initially think of a home screen as “just a new page.”
+
+In a mobile app, it is usually more than that.
+It often defines:
+- app entry behavior
+- top-level navigation expectations
+- future tab structure
+- the user’s first impression after app open
+
+So it has more architectural weight than a normal inner screen.
+
+## Lesson 2 — Dashboard-style screens need stronger scope control on mobile
+
+On the web, dashboards often grow quickly because larger layouts can absorb more widgets.
+
+On mobile, adding too many blocks too early usually hurts:
+- clarity
+- scanability
+- touch flow
+- layout consistency
+
+This feature reinforced a good mobile rule:
+**a smaller useful home screen is better than a crowded ambitious one**.
+
+## Lesson 3 — Mock data architecture matters even for “simple” overview screens
+
+A home screen may look simple visually, but it often depends on combined data:
+- user state
+- enrolled content
+- pending actions
+- recommendations
+
+That means overview screens can easily become architecture-breaking if they start shaping too much data locally.
+
+This feature showed why a small mock query layer is still important even when the UI seems straightforward.
+
+## Lesson 4 — Localization discipline becomes more visible on summary screens
+
+Listing screens often repeat one component pattern many times.
+
+Home screens usually combine many different small UI blocks.
+That makes them a stronger test of localization discipline:
+- more labels
+- more headings
+- more CTA copy
+- more RTL-sensitive rows
+
+So if the localization foundation is weak, a home screen exposes that very quickly.
+
+## Lesson 5 — Shared UI foundations prove their value when new product surfaces arrive
+
+Feature 06 created the shared design layer.
+
+Feature 08 was one of the first good tests of whether that layer actually helps with a new, more product-facing screen.
+
+Because the Home screen could be built from the shared primitives cleanly, the earlier design-system work proved useful rather than theoretical.
+
+---
+
+## Discussion notes
+
+### Why was this feature important even before backend integration?
+
+Because the student home screen is part of product structure, not just backend structure.
+
+Even with mock data, the app still needs to answer:
+what is the student supposed to see first?
+
+That question exists before real APIs exist.
+
+### Why not wait until auth and real user profiles exist?
+
+Because waiting would delay an important navigation and product-design decision.
+
+The home screen’s job at this stage is not to be fully personalized.
+Its job is to establish:
+- the student entry point
+- the main information hierarchy
+- the navigation relationship between overview and deeper flows
+
+Those decisions are worth making early.
+
+### Why not add more dashboard widgets now?
+
+Because the project is still in a focused mobile build phase.
+
+The feature required a useful home screen, not a complete student operating system.
+Keeping the scope small made the implementation cleaner and more durable.
+
+### What is the main React Native lesson here?
+
+A strong mobile home screen should be:
+- clear
+- fast to scan
+- connected to the rest of the app
+- safe for localization
+- built on reusable UI primitives
+- backed by a clean data boundary
+
+That is more valuable than making it visually busy.
+
+---
+
+## Final output of Feature 08
+
+At the end of this feature, the project had:
+- a dedicated Student Home Screen
+- a student app entry point that feels like a real landing screen
+- mock-data-driven home content
+- small home-specific query helpers inside the mock data layer
+- Arabic-first home-screen text through translation keys
+- English support still working as a secondary language
+- navigation entry points from Home into the existing student flows
+- reuse of the shared design foundation from Feature 06
+- loading-friendly and empty-friendly screen structure
+- RTL-safe implementation habits preserved
+- a stronger student app shell ready for future backend replacement
+
+---
+
+## Completion checklist for Feature 08
+
+Feature 08 is complete when all of these are true:
+
+- the app opens and lands on the student home screen
+- the student home screen exists as the proper student entry point
+- Arabic is the default visible language on the home screen
+- English still works after switching language
+- all visible home-screen text comes from translation keys
+- no new hardcoded visible strings were introduced
+- the home screen reads data from the mock data layer
+- no large home-specific mock arrays were embedded directly in the screen
+- home-specific helper/query functions were added to the mock data layer only where needed
+- the screen shows a greeting / top section
+- the screen shows enrolled / continue-learning content
+- the screen shows pending-enrollment content where relevant
+- the screen shows featured or recommended course content
+- the screen provides navigation into the existing student flows
+- the UI reuses the shared design foundation from Feature 06
+- the layout remains RTL-safe in Arabic
+- the same screen still works visually in English
+- the feature stayed inside the mock-data-first phase
+- no Supabase, Clerk, or unrelated teacher/profile work was introduced
+
+---
+
+## Exact commands used
+
+```bash
+touch "app/(student)/_layout.tsx"
+touch "app/(student)/home.tsx"
+```
+
+Update the mock data layer and translation files:
+```bash
+code lib/mock-data/student.ts
+code lib/i18n/ar.ts
+code lib/i18n/en.ts
+code "app/(student)/_layout.tsx"
+code "app/(student)/home.tsx"
+```
+
+Run the app after implementation:
+```bash
+npx expo start --clear
+```
+
+Optional TypeScript verification:
+```bash
+npx tsc --noEmit
+```
+
+Optional quick sanity checks for visible hardcoded strings in the new feature files:
+```bash
+grep -R "Welcome\\|Continue\\|Featured\\|Browse Courses" app lib/i18n
+```
+
+---
+
+## Official references
+
+These were the most relevant official references for this feature:
+
+- Expo Router tabs guide: [https://docs.expo.dev/router/advanced/tabs/](https://docs.expo.dev/router/advanced/tabs/)
+- Expo Router navigation guide: [https://docs.expo.dev/router/navigating-pages/](https://docs.expo.dev/router/navigating-pages/)
+- React Native `ScrollView` docs: [https://reactnative.dev/docs/scrollview](https://reactnative.dev/docs/scrollview)
+
+One important caution to remember for future work:
+
+a mobile home screen can attract too many ideas too early.
+For this phase, the correct implementation is the smallest useful student landing screen built on mock data and shared UI foundations, not a full dashboard platform.

@@ -4,13 +4,13 @@ import {
   EmptyState,
   AppText,
   Card,
-} from "../../../components/ui";
+} from "../../../../components/ui";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import type { Subject } from "../../../lib/types";
-import { getSubjectsByYear } from "../../../lib/mock-data/student";
-import { t } from "../../../lib/i18n";
+import type { Subject } from "../../../../lib/types";
+import { getSubjectsByYear } from "../../../../lib/mock-data/student";
+import { t } from "../../../../lib/i18n";
 import { FlatList, TouchableOpacity, View } from "react-native";
-import { Spacing } from "../../../constants/design";
+import { Spacing } from "../../../../constants/design";
 
 export default function SubjectsScreen() {
   const { yearId } = useLocalSearchParams<{ yearId: string }>();
@@ -48,7 +48,7 @@ return (
       renderItem={({ item }) => (
         <TouchableOpacity
           className="mb-3 active:opacity-70"
-          onPress={() => router.push(`/(student)/${yearId}/${item.id}`)}
+          onPress={() => router.push(`/(student)/browse/${yearId}/${item.id}`)}
         >
           <Card>
             <AppText variant="sectionTitle">{item.name}</AppText>

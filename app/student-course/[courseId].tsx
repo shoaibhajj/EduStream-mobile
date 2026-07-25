@@ -7,15 +7,15 @@ import {
   StatusBadge,
   LoadingScreen,
   EmptyState,
-} from "../../../components/ui";
-import { Spacing } from "../../../constants/design";
+} from "../../components/ui";
+import { Spacing } from "../../constants/design";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { t } from "../../../lib/i18n";
+import { t } from "../../lib/i18n";
 import {
   getCourseDetail,
   getLessonsByCourse,
-} from "../../../lib/mock-data/student";
-import type { CourseDetail, Lesson } from "../../../lib/types";
+} from "../../lib/mock-data/student";
+import type { CourseDetail, Lesson } from "../../lib/types";
 
 function formatDuration(seconds: number | null): string {
   if (seconds === null) return "";
@@ -116,7 +116,10 @@ export default function CourseDetailScreen() {
 
   function handleLessonPress(lesson: Lesson) {
     if (lesson.isPreview) {
-      router.push(`/(student)/watch/${lesson.id}`);
+     router.push({
+       pathname: "/student-watch/[lessonId]",
+       params: { lessonId: lesson.id },
+     });
     } else {
       Alert.alert(t("student.badge_locked"), t("student.lesson_locked_hint"));
     }
