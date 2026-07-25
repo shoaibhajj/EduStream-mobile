@@ -1,20 +1,8 @@
-import { View, Text, StyleSheet } from "react-native";
+// app/index.tsx
+// Temporary entry point — redirects to student browse flow.
+// Once auth is added, this will redirect based on role.
+import { Redirect } from "expo-router";
 
-export default function HomeScreen() {
-  return (
-    <View style={styles.container} className="!bg-purple-100">
-      <Text className="text-red-500">
-        EduStream Mobile — Expo Router works ✓{" "}
-      </Text>
-    </View>
-  );
+export default function Index() {
+  return <Redirect href="/(student)" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-});
