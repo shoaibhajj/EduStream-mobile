@@ -13,4 +13,8 @@ export const Colors = {
   warning: "#FF8904",
   error: "#EF4444",
   locked: "#99A1AF",
+  cta: "#D97706",
+  ctaLight: "#FEF3C7",
+  preview: "#0C7A5E",
+  previewLight: "#D1FAE5",
 } as const;

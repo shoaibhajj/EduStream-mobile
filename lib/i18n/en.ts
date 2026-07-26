@@ -1,8 +1,31 @@
 const en = {
+  onboarding: {
+    skip: "Skip",
+    next: "Next",
+    start_now: "Start now",
+
+    slide1: {
+      title: "Discover subjects and courses",
+      subtitle:
+        "Browse school subjects by grade and choose the course that fits your needs.",
+    },
+
+    slide2: {
+      title: "Watch a free lesson before enrolling",
+      subtitle:
+        "Each course includes a free preview lesson so you can explore the teacher’s style first.",
+    },
+
+    slide3: {
+      title: "Start your learning journey now",
+      subtitle: "Sign in and explore available courses anytime, from anywhere.",
+    },
+  },
   common: {
     loading: "Loading...",
     error_generic: "Something went wrong.",
     retry: "Retry",
+    app_name: "EduStream",
   },
   student: {
     academic_years_title: "Academic Years",

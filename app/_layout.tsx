@@ -51,7 +51,7 @@ export default function RootLayout() {
           headerBackTitle: "",
         }}
       />
-   
+
       <Stack.Screen
         name="teacher-course/[courseId]/lessons/new"
         options={{
@@ -92,6 +92,7 @@ export default function RootLayout() {
           headerBackTitle: "",
         }}
       />
+      <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
     </Stack>
   );
 }
