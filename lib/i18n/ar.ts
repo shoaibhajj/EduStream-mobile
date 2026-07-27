@@ -23,7 +23,8 @@ const ar = {
     loading: "جاري التحميل...",
     error_generic: "حدث خطأ ما.",
     retry: "إعادة المحاولة",
-    app_name: "EduStream",
+    app_name: "أكاديمية المُعلِّم",
+    academyName: "أكاديمية المُعلِّم",
   },
   student: {
     academic_years_title: "السنوات الدراسية",
@@ -53,7 +54,7 @@ const ar = {
     watch_screen_title: "مشاهدة الحصة",
     watch_coming_soon: "مشغّل الفيديو قيد الإعداد.",
     duration_minutes: "دقيقة",
-    home_greeting: "مرحباً بك في EduStream",
+    home_greeting: "مرحباً بك في أكاديمية المُعلِّم",
     home_subtitle: "واصل رحلتك التعليمية",
     home_my_courses: "دوراتي",
     home_continue_learning: "استكمال التعلم",

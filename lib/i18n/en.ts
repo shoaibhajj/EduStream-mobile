@@ -25,7 +25,8 @@ const en = {
     loading: "Loading...",
     error_generic: "Something went wrong.",
     retry: "Retry",
-    app_name: "EduStream",
+    app_name: "Moallem Academy",
+    academyName: "Moallem Academy",
   },
   student: {
     academic_years_title: "Academic Years",
@@ -55,7 +56,7 @@ const en = {
     watch_screen_title: "Watch Lesson",
     watch_coming_soon: "Video player coming soon.",
     duration_minutes: "min",
-    home_greeting: "Welcome to EduStream",
+    home_greeting: "Welcome to Moallem Academy",
     home_subtitle: "Continue your learning journey",
     home_my_courses: "My Courses",
     home_continue_learning: "Continue Learning",

@@ -1,7 +1,7 @@
 # EduStream Mobile — Progress Tracker
 
 ## Current Status
-Feature 15 is now **in progress**, but it is **not completed yet**. A first UI polish pass has started using a custom direction chosen during implementation instead of the previously proposed redesign direction. The app now has updated color tokens and a working onboarding flow, but the full design-system-first polish across all important screens, shared primitives, and empty/error/loading states is still unfinished.
+Feature 16 is now **complete**. The project has been prepared for its first installable Android APK build, the required Expo/EAS build configuration is in place, branding metadata has been updated for **Moallem Academy**, and the first Android APK was built and confirmed working on a real device. Feature 15 remains **in progress** and deferred for continued UI polish, empty/error/loading states, and broader design-system-first refinement.
 
 ## Next Up
 Feature 15 — Continue UI Polish and Empty/Error States
@@ -23,12 +23,12 @@ Feature 15 — Continue UI Polish and Empty/Error States
 - 12 — Build Teacher Course Management UI
 - 13 — Build Profile and Payment Info Screens
 - 14 — Connect Navigation Flows
+- 16 — Prepare First APK Build
 
 ### In Progress
 - 15 — Polish UI and Empty/Error States
 
 ### Not Started
-- 16 — Prepare First APK Build
 - 17 — Backend Phase (deferred for now per mock-data-first plan)
 
 ## Session Notes
@@ -98,6 +98,15 @@ Feature 15 — Continue UI Polish and Empty/Error States
 - Onboarding is currently functional, but this does **not** complete Feature 15.
 - Feature 15 still needs a broader design-system-first pass across the whole app, including shared primitives, student screens, teacher screens, profile/payment screens, loading states, empty states, and error states.
 - The current UI direction should be treated as an intermediate pass, not the final production-level polish target.
+- Completed Feature 16 by preparing the Expo project for its first installable Android APK build using EAS Build.
+- Updated app branding metadata for **Moallem Academy** and aligned build-facing config values in `app.json`.
+- Replaced the primary app icon, splash icon, and Android adaptive foreground asset with the new branded assets.
+- Added or confirmed the minimum Android build metadata required for EAS Android builds, including package identifier and versionCode.
+- Added EAS build configuration for a device-installable APK using a preview/internal profile.
+- Confirmed `npx expo config --type public` resolves successfully after the config updates.
+- Confirmed `npx tsc --noEmit` still passes clean after the build-readiness changes.
+- Ran the Android EAS build flow and successfully produced the first installable APK.
+- Downloaded and installed the APK on a real Android device and confirmed the app launches and works.
 
 ## Feature 15 Remaining Work
 - [ ] Review all shared UI primitives for visual consistency after the color-token changes.

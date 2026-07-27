@@ -1,16 +1,18 @@
 {
   "expo": {
-    "name": "EduStream-mobile",
-    "slug": "EduStream-mobile",
+    "name": "Moallem Academy",
+    "slug": "moallem-academy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "edustreammobile",
+    "scheme": "moallemacademy",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
+      "package": "com.moallem.academy",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,6 +40,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "27271136-8ddc-4633-8915-3b2fde2e744f"
+      }
     }
   }
 }
