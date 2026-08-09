@@ -10445,3 +10445,821 @@ That makes Feature 15 a better next step than trying to polish screens on top of
 - Expo Router stack navigator https://docs.expo.dev/router/advanced/stack/
 - React Native KeyboardAvoidingView https://reactnative.dev/docs/keyboardavoidingview
 - React Native ScrollView https://reactnative.dev/docs/scrollview
+
+
+
+
+# Feature 17 — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
+
+## What this feature does
+
+This feature installs the first real authentication foundation for the EduStream mobile app using Clerk in Expo.
+
+It introduces:
+- Clerk package installation for Expo
+- secure token persistence support
+- root-level auth provider wiring
+- the first app-wide auth runtime foundation
+- compatibility preparation for authenticated backend API calls later
+
+This feature does **not** yet build the real auth forms or full backend profile resolution flow.
+
+It does **not** include:
+- finished sign-in UI
+- finished sign-up UI
+- finished role-selection UI
+- profile-context wiring
+- protected-route role guards
+- replacement of all mock identity assumptions
+- full `/api/profile/me` integration flow
+- full signed-in vs signed-out boot redirect logic
+
+The final success condition for the implemented part of this feature was:
+- Clerk is installed correctly for Expo
+- the secure storage dependency is installed
+- the root app layout is wrapped with `ClerkProvider`
+- Clerk token caching is wired using the correct package-supported approach
+- TypeScript passes cleanly after integration
+- the app still starts successfully after the auth provider is added
+
+---
+
+## Why this feature matters
+
+Up to this point, the app still had placeholder auth screens and mock role assumptions. That was acceptable during the UI-first and mock-data-first phase, but it could not remain that way once the project started preparing for real backend integration.
+
+This feature matters because it establishes the first real auth boundary between:
+- mobile UI state
+- Clerk session state
+- future backend-protected API calls
+
+For a React / Next.js engineer, this is similar to the moment when a web app stops pretending auth will be “added later” and actually installs the auth runtime at the root of the application. In React Native with Expo, that step matters even more because auth is not just a page-level concern. It affects:
+- app boot behavior
+- token persistence
+- native storage decisions
+- root provider structure
+- future API architecture
+
+So even though this feature does not yet deliver the full login experience, it is still a major architectural milestone.
+
+---
+
+## Original implementation plan
+
+The implementation plan for Feature 17 became:
+
+1. Re-read the current mobile repo documents before touching auth code.
+2. Re-check the actual mobile auth screens and root layout.
+3. Re-check the web/backend repo auth expectations and Postman-confirmed auth flow.
+4. Install the correct Expo-compatible Clerk package.
+5. Install the secure storage dependency needed by Clerk on mobile.
+6. Wire `ClerkProvider` into the root Expo Router layout.
+7. Confirm the correct token cache strategy for the installed Clerk version.
+8. Avoid inventing unnecessary custom auth code if the package already provides the correct built-in solution.
+9. Run TypeScript verification after integration.
+10. Run the app and confirm startup still works.
+
+Important project constraints remained active during this feature:
+- Arabic-first still remains the product default
+- RTL behavior must not regress
+- auth UI is still incomplete in this feature
+- backend profile resolution is not fully wired yet
+- this feature should install the auth layer foundation only, not collapse into later features
+
+---
+
+## Step 1 — Re-read the repo documents before changing auth code
+
+### What we did
+
+Before changing code, we re-read the current mobile repo documentation and tracker context so Feature 17 would stay aligned with the real project state.
+
+The re-read included the documents that define:
+- architecture direction
+- feature order
+- current implementation phase
+- backend integration expectations
+- mock-data vs real-backend boundaries
+
+### Why we did it
+
+This mattered because auth work is one of the easiest places for implementation drift to happen.
+
+If auth is added from memory instead of from the current repo state, several things can go wrong very quickly:
+- wrong package choice
+- wrong provider placement
+- wrong assumptions about app boot behavior
+- premature implementation of later features
+- mismatch with the backend source of truth
+
+This step also confirmed an important implementation boundary:
+Feature 17 is the auth-layer foundation, not the full auth migration.
+
+### Engineering note
+
+This is especially important in React Native projects because root-level auth changes affect app startup much more directly than many normal screen features. A wrong decision in auth setup can break:
+- route rendering
+- startup hydration
+- app-wide hooks
+- future token access
+- TypeScript assumptions across many files
+
+So reading first was not overhead. It was part of correct implementation.
+
+---
+
+## Step 2 — Inspect the current mobile auth reality before installing anything
+
+### What we did
+
+We reviewed the current mobile app auth-related structure before making changes.
+
+The important findings were:
+- `app/(auth)/sign-in.tsx` was still a placeholder
+- `app/(auth)/sign-up.tsx` was still a placeholder
+- `app/(auth)/select-role.tsx` was still a placeholder
+- `app/index.tsx` still had placeholder boot logic
+- `app/_layout.tsx` did not yet have a Clerk provider
+- the app was still running with mock role assumptions in later flows
+
+### Why we did it
+
+This prevented Feature 17 from being implemented with the wrong scope.
+
+Without this inspection, it would have been easy to accidentally start mixing:
+- auth provider setup
+- auth form implementation
+- profile resolution
+- role routing
+- session-aware API design
+
+into one large unfocused change.
+
+Instead, this inspection made the current reality clear:
+the mobile app needed the auth runtime foundation first, and the rest would follow in later features.
+
+### React vs React Native note
+
+For a Next.js engineer, this is similar to checking whether the app currently has:
+- middleware auth
+- server session helpers
+- page guards
+- provider wiring
+- login pages
+
+before deciding what the next auth feature should actually do.
+
+In this Expo app, the equivalent inspection had to happen around:
+- route groups
+- root layout
+- placeholder screens
+- provider readiness
+- future token flow
+
+---
+
+## Step 3 — Re-check the backend auth expectations before wiring mobile auth
+
+### What we did
+
+Before integrating Clerk into the mobile app, we re-confirmed the backend auth contract that mobile must eventually satisfy.
+
+The key confirmed points were:
+- the backend uses Clerk as the auth provider
+- protected backend routes expect `Authorization: Bearer <clerkToken>`
+- `/api/profile/me` is the backend source of truth after login
+- role resolution must ultimately come from the backend profile flow rather than mobile guesses
+
+### Why we did it
+
+This was critical because mobile auth setup should never be designed in isolation from the backend.
+
+If the mobile app installed Clerk in a way that did not line up with how the backend expects tokens, the auth layer would look “installed” but would still be structurally wrong for the real product.
+
+This step confirmed the correct direction:
+- Clerk session on mobile
+- bearer token retrieval from Clerk
+- future API calls authenticated with that token
+- backend profile resolution after sign-in
+
+### Why this matters
+
+This feature is only the foundation, but even foundations can be wrong if they point toward the wrong integration contract.
+
+The backend already established the real truth:
+- Clerk is the provider
+- bearer tokens are the auth mechanism
+- profile and role come from the backend after authentication
+
+So mobile had to be prepared for that exact flow, not a simplified local-only interpretation.
+
+---
+
+## Step 4 — Install the correct Clerk package for Expo
+
+### What we did
+
+We installed the Clerk Expo package:
+
+```bash
+npx expo install @clerk/clerk-expo
+```
+
+### Why we did it
+
+This is the package designed for Expo and React Native environments. It provides the core client-side Clerk runtime for:
+- auth provider setup
+- session access
+- auth hooks
+- token access for later API work
+
+Using `npx expo install` was important because this is an Expo-managed project, and Expo package installation helps keep package versions aligned with the active Expo SDK.
+
+### Why this matters
+
+This was the first point where the app stopped being “auth-planned” and became “auth-capable at the runtime level.”
+
+Before this step:
+- auth existed only in architecture and planning
+- auth screens were placeholders
+- role assumptions were mock-based
+
+After this step:
+- the app had the actual Expo-compatible Clerk dependency available for integration
+
+### React vs React Native note
+
+For a web engineer, installing an auth SDK may feel straightforward. In Expo, package selection matters more because you are not only choosing a JavaScript library. You are choosing something that has to fit:
+- Expo runtime expectations
+- native platform behavior
+- token persistence requirements
+- SDK compatibility boundaries
+
+That is why the exact Expo-compatible package mattered here.
+
+---
+
+## Step 5 — Install the secure storage dependency required for mobile token persistence
+
+### What we did
+
+We installed:
+
+```bash
+npx expo install expo-secure-store
+```
+
+### Why we did it
+
+Clerk on mobile needs a secure persistence layer for session-related token caching. In Expo apps, `expo-secure-store` is the correct secure-storage building block for that purpose.
+
+This package gives the app a secure mobile-native storage mechanism instead of relying on unsafe or inappropriate alternatives for auth persistence.
+
+### Why this matters
+
+This was an important mobile-specific step.
+
+On the web, auth persistence often depends on:
+- cookies
+- browser storage
+- server sessions
+- middleware-backed session checks
+
+In React Native with Expo, there is no browser cookie environment managing app auth for you. So mobile auth needs an explicit storage strategy for persisted session data.
+
+That is why this step was not optional package noise. It was part of making auth viable on a real device.
+
+### React vs React Native note
+
+A Next.js engineer may instinctively think about auth persistence in terms of:
+- HttpOnly cookies
+- middleware
+- server session helpers
+
+That instinct does not transfer directly to Expo mobile.
+
+In Expo:
+- there is no browser cookie layer
+- secure storage decisions are part of auth architecture
+- token/session persistence is a client-runtime concern
+
+So `expo-secure-store` is part of the mobile auth foundation in a way that has no exact one-line equivalent in a typical web app.
+
+---
+
+## Step 6 — Wire `ClerkProvider` into the root Expo Router layout
+
+### What we did
+
+We updated the root app layout so the entire route tree is wrapped by Clerk at the top level.
+
+The key implementation change was in:
+
+- `app/_layout.tsx`
+
+The app was updated so `ClerkProvider` wraps the root `<Stack />` instead of leaving the route tree unauthenticated.
+
+The shape of the implementation became conceptually like this:
+
+```tsx
+import "../global.css";
+import "../lib/i18n";
+import { Stack } from "expo-router";
+import { ClerkProvider } from "@clerk/clerk-expo";
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
+
+export default function RootLayout() {
+  return (
+    <ClerkProvider tokenCache={tokenCache}>
+      <Stack />
+    </ClerkProvider>
+  );
+}
+```
+
+### Why we did it
+
+The auth provider belongs at the app root because authentication state must be available across the route tree.
+
+If `ClerkProvider` were placed too low in the component tree, later screens and hooks would not have reliable access to:
+- session state
+- signed-in status
+- token retrieval
+- future auth-based routing decisions
+
+So this step established the correct app-wide auth ownership boundary.
+
+### Why this matters
+
+This is the real architectural core of Feature 17.
+
+Installing a package is only preparation.
+Wrapping the app at the root is what actually makes auth state part of the application runtime.
+
+At that point, the app becomes structurally ready for future work such as:
+- sign-in screens using Clerk hooks
+- signed-in session checks
+- bearer token retrieval for API calls
+- profile resolution after login
+- role-aware route decisions later
+
+### React vs React Native note
+
+This feels similar to adding a root auth provider in a React web app, but the mobile consequences are stronger.
+
+In Expo Router, the root layout is part of the app startup path. So placing a provider here means the auth runtime participates in:
+- app boot
+- route-tree availability
+- screen-level hook access
+- future signed-in hydration behavior
+
+That is why this was the right place to wire Clerk.
+
+---
+
+## Step 7 — Confirm the correct token cache strategy for the installed Clerk version
+
+### What we did
+
+At first, there was an attempt to treat token caching as a custom implementation detail and create a separate `lib/tokenCache.ts` file.
+
+After checking the installed Clerk package behavior and typings more carefully, we confirmed that the correct approach for the installed version was to use the built-in token cache export provided by Clerk itself:
+
+```ts
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
+```
+
+The temporary custom token-cache file was then removed.
+
+### Why we did it
+
+This was an important correction.
+
+A common engineering mistake is to assume that any infrastructure concern should be manually abstracted into a custom helper file. But in auth work, unnecessary custom code can create:
+- type mismatches
+- incorrect runtime assumptions
+- maintenance overhead
+- subtle auth bugs later
+
+Because the installed Clerk package already provided the supported token-cache path, the correct implementation was to use that built-in solution rather than forcing a custom one.
+
+### Why this matters
+
+This step improved the implementation quality in two ways:
+
+1. It reduced custom auth infrastructure that the app did not actually need.
+2. It kept the app closer to the Clerk-supported path, which is safer for future maintenance.
+
+This is a very important lesson in SDK integration:
+**do not out-abstract the package unless the package actually forces you to.**
+
+### Engineering note
+
+The temporary custom token cache idea was not unreasonable. It came from a good instinct:
+- mobile auth needs secure storage
+- token persistence matters
+- maybe the app should own the cache implementation
+
+But after checking the installed SDK behavior, the better engineering decision was to simplify and rely on the built-in supported path.
+
+That kind of correction is healthy engineering, not a mistake to hide.
+
+---
+
+## Step 8 — Remove the unnecessary custom token-cache file after confirming the supported solution
+
+### What we did
+
+Once the built-in Clerk token cache path was confirmed, we removed the temporary custom file:
+
+- `lib/tokenCache.ts`
+
+### Why we did it
+
+Leaving the custom file in the repo would have created confusion for future work.
+
+A future engineer or AI agent could reasonably ask:
+- which token cache is the real one?
+- should new auth work import the custom file?
+- is the built-in cache only partially used?
+- was the custom file left there intentionally?
+
+Removing the unused custom file kept the auth layer cleaner and made the real source of truth obvious.
+
+### Why this matters
+
+Feature 17 is a foundation feature, so clarity matters as much as functionality.
+
+At this stage, the app does not need:
+- parallel token-cache patterns
+- dead auth helper files
+- partially adopted abstractions
+
+It needs the smallest correct auth base that later features can build on without confusion.
+
+---
+
+## Step 9 — Run TypeScript verification after the provider integration
+
+### What we did
+
+After the Clerk integration was wired at the root, we ran:
+
+```bash
+npx tsc --noEmit
+```
+
+### Why we did it
+
+Auth-layer changes affect root files, providers, imports, and package typings. That makes TypeScript verification especially important after this kind of change.
+
+This step confirmed that:
+- package imports resolved correctly
+- provider usage matched available typings
+- the token cache import path was correct
+- the auth setup did not break existing TypeScript assumptions in the project
+
+### Result
+
+TypeScript passed cleanly after the Clerk setup changes.
+
+### Why this matters
+
+For Feature 17, TypeScript success was one of the most important proof points.
+
+A root auth integration that “looks fine” but fails type checks is not a stable foundation. The point of this feature was not just to add Clerk visually. It was to install it in a way that is structurally sound enough for later feature work.
+
+---
+
+## Step 10 — Start the app and verify runtime stability after adding Clerk
+
+### What we did
+
+After wiring `ClerkProvider`, we started the app again and verified that startup still worked.
+
+The practical verification step was:
+
+```bash
+npx expo start --clear
+```
+
+### Why we did it
+
+Provider-level changes can break app boot in ways that do not always show up from static reading alone.
+
+This runtime verification was needed to confirm:
+- the root provider does not crash the app
+- the route tree still renders
+- the auth package wiring is acceptable to the current Expo runtime
+- no immediate startup regression was introduced
+
+### Result
+
+The app started successfully after the provider wiring.
+
+### Why this matters
+
+This was the real runtime proof that Feature 17’s implemented part was successful.
+
+It confirmed that the app is now in a better state than before:
+- still bootable
+- still type-safe
+- now auth-provider-aware
+- ready for the next auth steps
+
+---
+
+## Problems encountered
+
+### Problem 1 — It was tempting to implement too much at once
+
+Auth work naturally pulls many related concerns with it:
+- provider setup
+- sign-in UI
+- sign-up UI
+- session helpers
+- app boot redirects
+- backend profile resolution
+- role-based routing
+
+That made it very easy for Feature 17 to grow into Feature 18 and Feature 19 by accident.
+
+### Why this was a real problem
+
+If we had allowed that scope creep, the result would likely have been:
+- slower implementation
+- more guessing
+- more backend-shape assumptions
+- a muddier feature boundary
+- harder debugging
+
+So one of the real engineering tasks in Feature 17 was not just technical wiring. It was scope control.
+
+---
+
+### Problem 2 — Initial instinct toward a custom token cache created unnecessary complexity
+
+At one point, a custom `lib/tokenCache.ts` implementation was introduced as if the project needed to own the token-cache logic directly.
+
+### Why this was a problem
+
+That approach added complexity before it was proven necessary.
+
+In SDK integrations, custom infrastructure should only be added when:
+- the SDK requires it
+- the product needs something the SDK does not provide
+- the package-supported path is insufficient
+
+That was not the case here.
+
+---
+
+### Problem 3 — Root auth changes always carry startup risk
+
+Adding a provider at the root of an Expo Router app is not like changing an isolated screen.
+
+A root provider can break:
+- app boot
+- route rendering
+- initialization order
+- typings
+- future hook access
+
+### Why this mattered
+
+That meant Feature 17 had to be validated both statically and at runtime.
+It was not enough to install packages and assume everything was fine.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Keep Feature 17 focused on the auth foundation only
+
+We solved the scope problem by keeping this feature intentionally narrow.
+
+Feature 17 implemented:
+- package installation
+- secure storage dependency
+- root provider wiring
+- token cache decision
+- verification
+
+And it explicitly did **not** attempt to finish:
+- auth forms
+- profile resolution
+- role-aware context
+- full boot gate
+
+That kept the feature coherent and finishable.
+
+---
+
+### Solution 2 — Prefer the Clerk-supported token cache path over custom abstraction
+
+We corrected the token-cache direction by using the built-in Clerk token-cache import and removing the temporary custom file.
+
+This reduced:
+- auth-layer noise
+- custom maintenance surface
+- future confusion
+
+And it kept the app closer to the supported SDK usage path.
+
+---
+
+### Solution 3 — Verify with both TypeScript and runtime startup
+
+We treated auth integration as complete only after both checks passed:
+
+```bash
+npx tsc --noEmit
+npx expo start --clear
+```
+
+This solved the root-startup risk by confirming:
+- static correctness
+- runtime stability
+
+That is the right verification standard for provider-level infrastructure work.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — Mobile auth has a stronger runtime-storage dimension
+
+For a web engineer, auth often feels dominated by:
+- cookies
+- middleware
+- request context
+- server session logic
+
+In Expo mobile, auth has a stronger client-runtime and storage dimension.
+You must think about:
+- where session state lives
+- how token persistence works
+- what secure storage means on device
+- how the app hydrates on startup
+
+That changes the mental model significantly.
+
+## Lesson 2 — Root providers matter more in mobile than they first appear
+
+In a web app, a root provider is important.
+In a mobile app, a root provider can directly influence app boot behavior.
+
+That makes provider placement a more critical architectural decision than it may seem from a simple React-only perspective.
+
+## Lesson 3 — SDK integration should stay as close to the supported path as possible
+
+This feature reinforced a strong lesson:
+when an SDK already provides the correct built-in mechanism, prefer that over custom abstraction.
+
+A web engineer often has a healthy instinct to centralize infrastructure in app-owned utilities. That instinct is useful, but mobile SDK integration punishes unnecessary indirection faster because:
+- package typings matter more
+- runtime setup paths are stricter
+- debugging friction is higher
+
+## Lesson 4 — Auth installation is not the same as auth completion
+
+This feature installed auth.
+It did not complete auth.
+
+That distinction matters a lot.
+
+The app is now ready for:
+- real sign-in UI
+- real sign-up UI
+- backend token usage
+- profile resolution
+- role-aware boot flow
+
+But those are still distinct implementation steps.
+Treating provider installation as “auth done” would be a major misunderstanding.
+
+---
+
+## Discussion notes
+
+### Why was Feature 17 still valuable even though the auth screens are still placeholders?
+
+Because infrastructure-first work is often invisible but still essential.
+
+Without this feature, the later auth features would be forced to do two jobs at once:
+- install the auth runtime
+- build the product auth flows
+
+That would make every later auth change harder to reason about.
+
+By separating the foundation from the UX layers, later features can focus more clearly on:
+- forms
+- profile resolution
+- boot logic
+- role routing
+
+### Why was removing custom auth code actually a good sign?
+
+Because it showed that the implementation was being corrected toward simplicity instead of defended for ego.
+
+Healthy engineering does not try to preserve unnecessary code just because it was written.
+It preserves the smallest correct solution.
+
+That is especially important in authentication work, where complexity has a long maintenance cost.
+
+### What is the most important thing to remember from Feature 17?
+
+The most important thing is this:
+
+**Clerk is now part of the app runtime, but the app is not yet fully auth-driven.**
+
+That means future features should build on this provider foundation rather than bypass it or reinvent it.
+
+---
+
+## Final output of Feature 17
+
+At the end of the implemented part of Feature 17, the project had:
+- `@clerk/clerk-expo` installed
+- `expo-secure-store` installed
+- Clerk wired into the root app layout
+- the route tree wrapped by `ClerkProvider`
+- the correct built-in token-cache strategy selected for the installed Clerk version
+- the temporary unnecessary custom token-cache file removed
+- clean TypeScript verification after integration
+- successful app startup after auth-provider wiring
+
+This means the app now has the first real authentication foundation in place and is structurally ready for the next auth features.
+
+---
+
+## Completion checklist for the implemented part of Feature 17
+
+Feature 17, as implemented so far, is complete when all of these are true:
+
+- `@clerk/clerk-expo` is installed
+- `expo-secure-store` is installed
+- `app/_layout.tsx` imports and uses `ClerkProvider`
+- the root Expo Router tree is wrapped in `ClerkProvider`
+- the token cache strategy matches the installed Clerk package’s supported path
+- unnecessary custom token-cache code is removed
+- `npx tsc --noEmit` passes cleanly
+- `npx expo start --clear` starts successfully
+- existing app startup behavior is not broken by the auth provider
+- the app is now ready for the next auth features without pretending they are already finished
+
+---
+
+## Exact commands used
+
+Install the auth packages:
+
+```bash
+npx expo install @clerk/clerk-expo
+npx expo install expo-secure-store
+```
+
+Run TypeScript verification:
+
+```bash
+npx tsc --noEmit
+```
+
+Run the app and verify startup:
+
+```bash
+npx expo start --clear
+```
+
+Files touched during the implemented part of this feature:
+
+```bash
+code app/_layout.tsx
+code package.json
+```
+
+Temporary file that was created during exploration and then removed after confirming the built-in Clerk token cache was the correct solution:
+
+```bash
+code lib/tokenCache.ts
+```
+
+---
+
+## Official references
+
+The most relevant references for this feature were:
+
+- Clerk Expo docs: [https://clerk.com/docs/quickstarts/expo](https://clerk.com/docs/quickstarts/expo)
+- Clerk Expo SDK reference: [https://clerk.com/docs/references/expo/overview](https://clerk.com/docs/references/expo/overview)
+- Expo SecureStore docs: [https://docs.expo.dev/versions/latest/sdk/securestore/](https://docs.expo.dev/versions/latest/sdk/securestore/)
+- Expo Router root layout docs: [https://docs.expo.dev/router/layouts/](https://docs.expo.dev/router/layouts/)
+
+One important caution to remember for later features:
+
+installing Clerk at the root is only the foundation. The app should not be considered fully auth-migrated until later features complete:
+- sign-in and sign-up screens
+- auth-aware boot routing
+- `/api/profile/me` resolution
+- role-aware mobile flow
+- removal of mock identity assumptions

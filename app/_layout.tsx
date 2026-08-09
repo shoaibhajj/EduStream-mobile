@@ -2,9 +2,22 @@ import "../global.css";
 import "../lib/i18n";
 import { Stack } from "expo-router";
 import { t } from "../lib/i18n";
+import { ClerkProvider } from "@clerk/clerk-expo";
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+if (!publishableKey) {
+  throw new Error(
+    "Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in environment. Check your .env file."
+  );
+}
 
 export default function RootLayout() {
+
+
   return (
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(student)" options={{ headerShown: false }} />
@@ -94,5 +107,6 @@ export default function RootLayout() {
       />
       <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
     </Stack>
+      </ClerkProvider>
   );
 }

@@ -98,3 +98,31 @@ export type PaymentInfo = {
   accountNumber: string | null;
   phoneNumber: string | null;
 };
+
+
+// ─── Auth / Profile (real backend-backed) ─────────────────────────────
+
+export type AppRole = "student" | "teacher" | "admin";
+
+export type TeacherApprovalStatus =
+  | "not_applicable"
+  | "pending"
+  | "approved"
+  | "rejected";
+
+export type ApiProfile = {
+  id: string; // DB profile id
+  clerkUserId: string; // profiles.clerk_user_id
+  role: AppRole;
+  displayName: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  hasActiveSubscription: boolean;
+  teacherApprovalStatus: TeacherApprovalStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProfileMeResponse = {
+  actor: ApiProfile;
+};

@@ -1,17 +1,22 @@
 # EduStream Mobile — Progress Tracker
 
 
+
 ## Current Status
 Feature 16 is **complete**. The first installable Android APK was built and confirmed working on a real device.
 Feature 15 is **in progress** — UI polish, empty/error/loading states, and design-system-first refinement are ongoing.
+Feature 17 is now **in progress** — Clerk has been installed, the root provider wiring is in place, the Expo-compatible built-in token cache is configured, and the app boots successfully without runtime or TypeScript errors.
 The backend analysis phase (reading web repo + Postman collection) is now **complete** — the backend is ready for mobile consumption and Features 17–24 below represent the approved continuation plan.
 
 
+
 ## Next Up
-Feature 15 — Complete UI Polish and Empty/Error States (finish before starting Feature 17)
+Feature 15 — Complete UI Polish and Empty/Error States (finish before continuing deeper Feature 17 work)
+
 
 
 ## Build Progress
+
 
 
 ### Completed
@@ -32,12 +37,14 @@ Feature 15 — Complete UI Polish and Empty/Error States (finish before starting
 - 16 — Prepare First APK Build
 
 
+
 ### In Progress
 - 15 — Polish UI and Empty/Error States
+- 17 — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
+
 
 
 ### Not Started
-- 17 — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
 - 18 — Build Real Sign-In / Sign-Up / Role-Selection Screens
 - 19 — Wire Profile Resolution (`GET /api/profile/me`)
 - 20 — Wire Browse + Course Listing to Real API
@@ -47,10 +54,13 @@ Feature 15 — Complete UI Polish and Empty/Error States (finish before starting
 - 24 — Wire Teacher Dashboard to Real API
 
 
+
 ## Backend API Reference (Source of Truth)
+
 
 The web repo (`EduStream-web`) is the backend source of truth.
 All mobile routes must go through the following confirmed API groups:
+
 
 | Group | Key Routes | Auth Required |
 |---|---|---|
@@ -62,10 +72,12 @@ All mobile routes must go through the following confirmed API groups:
 | Teacher | `GET /api/teacher/courses`, `GET /api/teacher/courses/:id/lessons` | Yes (teacher role) |
 | Admin (review) | `POST /api/payment/requests/:id/review` | Yes (admin role) |
 
+
 **Auth provider:** Clerk. Token passed as `Authorization: Bearer <clerkToken>` on all protected routes.
 **Video provider:** Dailymotion. Player ID: `x1lwfu`. Profile ID: `x5t43rm`. Playback access resolved server-side via `/api/lessons/:id/playback-access`.
 **Media/thumbnail provider:** Cloudinary. Cloud name: `dawoemact`.
 **Database:** Neon PostgreSQL (Prisma ORM on web side).
+
 
 
 ## Session Notes
@@ -110,7 +122,7 @@ All mobile routes must go through the following confirmed API groups:
 - Kept student screen behavior unchanged while moving mock relationships and query-like shaping into the data layer.
 - Confirmed the existing student browse and course detail flow still works after the mock-data refactor.
 - Confirmed Arabic remains the default app experience after the refactor, and English still works through the existing toggle.
-- Verified the new `shared.ts`, `teacher.ts`, and `profile.ts` files are intentionally structural for upcoming features and do not need visible UI yet.
+- Restructured `app/(student)` navigation and tab flows for better separation between browse and course detail.
 - Built the student home screen as the new default landing screen for student users using mock-data-driven sections for enrolled courses, pending enrollments, and featured courses.
 - Added home-screen-specific mock query helpers in `lib/mock-data/student.ts` so home data stays inside the mock data layer and remains easy to replace with a real backend later.
 - Added all student home visible strings to `lib/i18n/ar.ts` and `lib/i18n/en.ts` with Arabic-first coverage and English fallback support.
@@ -135,18 +147,10 @@ All mobile routes must go through the following confirmed API groups:
 - Onboarding is currently functional, but this does **not** complete Feature 15.
 - Feature 15 still needs a broader design-system-first pass across the whole app, including shared primitives, student screens, teacher screens, profile/payment screens, loading states, empty states, and error states.
 - The current UI direction should be treated as an intermediate pass, not the final production-level polish target.
-- Completed Feature 16 by preparing the Expo project for its first installable Android APK build using EAS Build.
-- Updated app branding metadata for **Moallem Academy** and aligned build-facing config values in `app.json`.
-- Replaced the primary app icon, splash icon, and Android adaptive foreground asset with the new branded assets.
-- Added or confirmed the minimum Android build metadata required for EAS Android builds, including package identifier and versionCode.
-- Added EAS build configuration for a device-installable APK using a preview/internal profile.
-- Confirmed `npx expo config --type public` resolves successfully after the config updates.
-- Confirmed `npx tsc --noEmit` still passes clean after the build-readiness changes.
-- Ran the Android EAS build flow and successfully produced the first installable APK.
-- Downloaded and installed the APK on a real Android device and confirmed the app launches and works.
+- Added EAS build configuration and produced the first installable APK.
 - Completed backend analysis pass: read web repo API structure, all route groups, and full Postman collection.
 - Confirmed backend is ready for mobile consumption — all student, teacher, payment, and playback routes exist and are tested.
-- Backend uses Clerk for auth (Bearer token on all protected routes), Dailymotion for video (player `x1lwfu`), and Cloudinary for media.
+- Confirmed backend uses Clerk for auth (Bearer token on all protected routes), Dailymotion for video (player `x1lwfu`), and Cloudinary for media.
 - Playback access is resolved server-side via `/api/lessons/:id/playback-access` — mobile must call this route before attempting playback, not derive access locally.
 - Payment flow is manual/offline: student submits a payment reference via `POST /api/payment/requests`; admin approves or rejects via `/api/payment/requests/:id/review`.
 - `GET /api/profile/me` is the single source of truth for role and approval state after login — mobile must use it after every auth event.
@@ -160,6 +164,7 @@ All mobile routes must go through the following confirmed API groups:
 - Identified that `getPaymentInfo` and `updatePaymentInfo` in `lib/mock-data/teacher.ts` operate on an in-memory mutable array — this is entirely mock-only and has no persistence; must be replaced by real API calls in Feature 22.
 
 
+
 ## Feature 15 Remaining Work
 - [ ] Review all shared UI primitives for visual consistency after the color-token changes.
 - [ ] Redesign loading states beyond the current basic implementation.
@@ -171,25 +176,47 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Run `npx tsc --noEmit` and manual RTL QA again after the remaining Feature 15 work is finished.
 
 
+
 ## Feature 17 Plan — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
 
-**Goal:** Install Clerk into the mobile app, protect routes with a real auth gate, and redirect users correctly based on auth state. No UI changes to auth screens yet — that is Feature 18.
 
-### Steps
-- [ ] Install `@clerk/clerk-expo` and required peer dependencies.
-- [ ] Add `ClerkProvider` to `app/_layout.tsx` wrapping the entire `<Stack>`.
-- [ ] Store Clerk publishable key in `.env` as `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` (value: `pk_test_dXAtc3BhcnJvdy03Mi5jbGVyay5hY2NvdW50cy5kZXYk`).
-- [ ] Create `lib/auth.ts` with a `useAuthToken()` helper that returns the current Clerk session JWT for use in API headers.
-- [ ] Replace the current `app/index.tsx` redirect logic: check `isSignedIn` from `useAuth()` first — if signed in, call `GET /api/profile/me` and redirect based on role; if not signed in, redirect to `/(onboarding)` (first time) or `/(auth)/sign-in`.
-- [ ] Create `lib/api/client.ts` — a base `apiFetch()` helper that automatically injects the `Authorization: Bearer <token>` header for authenticated calls. Accepts `auth?: boolean` flag.
-- [ ] Verify `npx tsc --noEmit` passes clean.
-- [ ] Verify Arabic RTL layout still correct after provider wrapping.
-- [ ] Test on Android device that the redirect logic behaves correctly for the unauthenticated case.
+**Goal:** Install Clerk into the mobile app, wire the root auth provider correctly for Expo, define the authenticated API foundation, and replace the placeholder app-entry redirect with a real auth-aware boot gate. No real auth form UI yet — that remains Feature 18.
+
+
+### Current Status
+- [x] Installed `@clerk/clerk-expo`.
+- [x] Installed `expo-secure-store`.
+- [x] Added `ClerkProvider` to `app/_layout.tsx` wrapping the root `<Stack>`.
+- [x] Confirmed the correct token cache strategy for the installed Clerk version is the built-in `tokenCache` import from `@clerk/clerk-expo/token-cache`.
+- [x] Removed the temporary custom `lib/tokenCache.ts` file after confirming it was unnecessary and incompatible with the installed package typings.
+- [x] Confirmed `npx tsc --noEmit` passes clean after Clerk setup.
+- [x] Confirmed the app starts successfully without runtime errors after provider wiring.
+
+
+### Remaining Steps
+- [ ] Add `.env` with `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+- [ ] Add `.env.example` documenting required mobile env vars.
+- [ ] Add `EXPO_PUBLIC_API_BASE_URL` to the mobile env setup.
+- [ ] Extend `lib/types.ts` with real auth/profile types for the backend `Profile` shape and `/api/profile/me` response.
+- [ ] Create `lib/api/client.ts` — a base `apiFetch()` helper for authenticated and unauthenticated backend calls.
+- [ ] Optionally add a typed `fetchProfileMe()` helper under `lib/api/`.
+- [ ] Replace the current `app/index.tsx` placeholder redirect logic with a real auth-aware boot gate:
+  - if Clerk is still loading, hold boot;
+  - if signed out, route to onboarding or sign-in;
+  - if signed in, call `GET /api/profile/me`;
+  - redirect by confirmed backend role.
+- [ ] Register the `(auth)` route group explicitly in `app/_layout.tsx` if needed for clean auth navigation.
+- [ ] Verify signed-out boot behavior on Android.
+- [ ] Verify Arabic RTL layout still behaves correctly after the auth gate changes.
+- [ ] Verify invalid or missing token fallback routes cleanly to sign-in.
+
 
 
 ## Feature 18 Plan — Build Real Sign-In / Sign-Up / Role-Selection Screens
 
+
 **Goal:** Replace placeholder auth screens with real Clerk-powered forms, following the same role-selection flow the web app uses after sign-up.
+
 
 ### Steps
 - [ ] Build `app/(auth)/sign-in.tsx` using `useSignIn()` from `@clerk/clerk-expo` — email/password form, Arabic-first labels, RTL-safe layout.
@@ -202,9 +229,12 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify Arabic RTL layout on both sign-in and sign-up screens on a real device.
 
 
+
 ## Feature 19 Plan — Wire Profile Resolution (`GET /api/profile/me`)
 
+
 **Goal:** After any login event, resolve the real backend profile and make `role`, `approvalState`, and profile data available globally across the app.
+
 
 ### Steps
 - [ ] Create `lib/api/profile.ts` with `fetchMyProfile()` calling `GET /api/profile/me` using `apiFetch()`.
@@ -218,15 +248,19 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify profile loads correctly after sign-in on a real device.
 
 
+
 ## Feature 20 Plan — Wire Browse + Course Listing to Real API
 
+
 **Goal:** Replace mock academic years, subjects, and course listing data with real data from the backend. Browse routes require no auth.
+
 
 ### API routes used
 - `GET /api/browse/years` — academic years list
 - `GET /api/browse/subjects` — all subjects (optional `?academicYearId=` filter)
 - `GET /api/courses?subjectId=&page=1&limit=20` — published courses by subject
 - `GET /api/courses?search=&page=1&limit=20` — search published courses
+
 
 ### Steps
 - [ ] Create `lib/api/browse.ts` with `fetchYears()`, `fetchSubjects(academicYearId?)`, `fetchCourses(params)`, and `searchCourses(query)`.
@@ -242,14 +276,18 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify Arabic RTL layout on browse screens on a real device.
 
 
+
 ## Feature 21 Plan — Wire Course Detail + Lesson List to Real API
 
+
 **Goal:** Replace mock course detail and lesson list with real API data. Wire enrollment status display on the course detail screen.
+
 
 ### API routes used
 - `GET /api/courses/:id` — course detail + lesson metadata
 - `GET /api/courses/:id/lessons` — full lesson list (public; auth optional to get unlock states)
 - `GET /api/courses/:id/enrollment` — enrollment status for authenticated users (auth required)
+
 
 ### Steps
 - [ ] Create `lib/api/courses.ts` with `fetchCourseDetail(courseId)`, `fetchCourseLessons(courseId, token?)`, and `fetchEnrollmentStatus(courseId, token)`.
@@ -264,14 +302,18 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify RTL + Arabic layout on course detail and lesson list on a real device.
 
 
+
 ## Feature 22 Plan — Wire Enrollment Status + Payment Request Flow
 
+
 **Goal:** Replace the mock enrollment request flow with the real manual payment submission flow. Students submit a payment reference; the backend creates a pending enrollment awaiting admin approval.
+
 
 ### API routes used
 - `GET /api/payment/config` — fetch payment instructions + Sham Cash details (no auth)
 - `POST /api/payment/requests` — submit payment reference (`requestType: "course"`, `courseId`, `phoneNumber`, `paymentReference`)
 - `GET /api/payment/requests` — list student's own payment requests and their statuses (auth required)
+
 
 ### Steps
 - [ ] Create `lib/api/payment.ts` with `fetchPaymentConfig()`, `submitPaymentRequest(body, token)`, and `fetchMyPaymentRequests(token)`.
@@ -289,12 +331,16 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify RTL + Arabic layout on the enrollment/payment screen on a real device.
 
 
+
 ## Feature 23 Plan — Wire Lesson Playback Access + Dailymotion Player
+
 
 **Goal:** Replace the placeholder watch screen with a real access-gated Dailymotion video player. Playback access must be resolved server-side before the player is shown.
 
+
 ### API routes used
 - `GET /api/lessons/:id/playback-access` — resolves access decision (allowed/denied) and returns provider-aware data (Dailymotion video ID or embed URL)
+
 
 ### Steps
 - [ ] Create `lib/api/lessons.ts` with `fetchPlaybackAccess(lessonId, token?)`.
@@ -316,13 +362,17 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify playback on a real Android device — test preview lesson (no auth), locked lesson (no auth), and enrolled lesson (with auth).
 
 
+
 ## Feature 24 Plan — Wire Teacher Dashboard to Real API
 
+
 **Goal:** Replace all mock teacher data with real API calls. Teacher screens must be role-gated using the profile context from Feature 19.
+
 
 ### API routes used
 - `GET /api/teacher/courses` — teacher's own course listing (auth required, teacher role)
 - `GET /api/teacher/courses/:id/lessons` — lessons for a teacher-owned course (auth required, teacher role)
+
 
 ### Steps
 - [ ] Create `lib/api/teacher.ts` with `fetchTeacherCourses(token)` and `fetchTeacherCourseLessons(courseId, token)`.
@@ -338,6 +388,28 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify Arabic RTL layout on teacher screens on a real device.
 
 
+
 ## Architecture Notes
 
+
 ### Auth Flow (after Features 17–19)
+- Clerk is the auth provider; mobile uses `@clerk/clerk-expo` with the Expo built-in token cache (backed by `expo-secure-store`).
+- After any successful sign-in, the mobile app must call `GET /api/profile/me` (server-side profile resolution) to obtain canonical `role` and `teacherApprovalStatus`.
+- All protected backend routes must receive `Authorization: Bearer <clerkToken>` header carrying Clerk session tokens obtained via `getToken()` from `useAuth()` (or via a small helper).
+- Role-guarded UI (teacher area) must check the server-resolved profile role (not Clerk metadata) before rendering sensitive screens.
+- Teacher approval-state gating is enforced server-side; the mobile app must reflect the server's `teacherApprovalStatus` in the UI.
+
+
+### Env variables (mobile)
+- Only add the following to mobile `.env`:
+  - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
+  - `EXPO_PUBLIC_API_BASE_URL`
+- Do NOT add server-side secrets from web `.env.local` (such as `CLERK_SECRET_KEY` or webhook secrets) to the mobile `.env`.
+
+
+### Quick verification checklist after Feature 17
+- `npx tsc --noEmit` passes.
+- `npx expo start --clear` boots without runtime errors.
+- App boots signed-out to onboarding or sign-in as expected.
+- `ClerkProvider` is present and `tokenCache` is passed in `app/_layout.tsx`.
+- Arabic RTL layout unchanged and verified in main screens.
