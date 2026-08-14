@@ -1,11 +1,8 @@
-import { View, Text } from "react-native";
+import { Redirect } from "expo-router";
 
+// This screen has no backend API.
+// Role is always assigned server-side (student by default, changed by admin only).
+// Any navigation here routes back to the auth gate.
 export default function SelectRole() {
-  return (
-    <View className="flex-1 bg-background items-center justify-center">
-      <Text className="text-text-primary text-base font-semibold">
-        Placeholder
-      </Text>
-    </View>
-  );
+  return <Redirect href="/" />;
 }

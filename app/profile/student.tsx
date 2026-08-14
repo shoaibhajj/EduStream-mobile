@@ -24,6 +24,7 @@ import {
   Card,
 } from "../../components/ui";
 import {Colors} from "../../constants/colors";
+import { LogoutButton } from "../../components/ui/LogoutButton";
 
 export default function StudentProfileScreen() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -142,6 +143,9 @@ export default function StudentProfileScreen() {
                 onPress={handleEdit}
               />
             )}
+          </View>
+          <View style={{ marginTop: 12 }}>
+            <LogoutButton />
           </View>
         </ScreenContainer>
       </ScrollView>

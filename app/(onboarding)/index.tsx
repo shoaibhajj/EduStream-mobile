@@ -54,26 +54,38 @@ export default function OnboardingScreen() {
 
   const slide = SLIDES[index];
   const isLast = index === SLIDES.length - 1;
-
-  async function finish() {
-    await AsyncStorage.setItem("onboarding_done", "true");
-    router.replace("/(student)/home");
-  }
+//  old way with no real login
+  // async function finish() {
+  //   await AsyncStorage.setItem("onboarding_done", "true");
+  //   router.replace("/(student)/home");
+  // }
 
   function next() {
-    if (isLast) {
-      finish();
-      return;
-    }
+    // if (isLast) {
+    //   finish();
+    //   return;
+    // }
 
     setIndex((prev) => prev + 1);
+  }
+
+
+  async function finishOnboarding() {
+    await AsyncStorage.setItem("onboarding_done", "true");
+    router.replace("/(auth)/sign-in");
+  }
+
+
+  async function skipOnboarding() {
+    await AsyncStorage.setItem("onboarding_done", "true");
+    router.replace("/(auth)/sign-in");
   }
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      <Pressable onPress={finish} hitSlop={12} style={styles.skip}>
+      <Pressable onPress={skipOnboarding} hitSlop={12} style={styles.skip}>
         <AppText style={styles.skipLabel}>{t("onboarding.skip")}</AppText>
       </Pressable>
 
@@ -110,11 +122,15 @@ export default function OnboardingScreen() {
             />
           ))}
         </View>
-
-        <PrimaryButton
-          label={isLast ? t("onboarding.start_now") : t("onboarding.next")}
-          onPress={next}
-        />
+        {!isLast && (
+          <PrimaryButton label={t("onboarding.next")} onPress={next} />
+        )}
+        {isLast && (
+          <PrimaryButton
+            label={t("onboarding.start_now")}
+            onPress={finishOnboarding}
+          />
+        )}
       </View>
     </View>
   );

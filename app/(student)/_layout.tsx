@@ -1,8 +1,15 @@
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@clerk/expo";
 import { t } from "../../lib/i18n";
+import { LoadingScreen } from "../../components/ui";
 
 export default function StudentLayout() {
+  const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
+
+  if (!isLoaded) return <LoadingScreen />;
+  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+
   return (
     <Tabs
       screenOptions={{

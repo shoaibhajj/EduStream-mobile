@@ -1,72 +1,137 @@
 import { useEffect } from "react";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchProfileMe, ApiError } from "../lib/api";
+import { LoadingScreen } from "../components/ui";
+
+const PROFILE_RETRY_DELAYS_MS = [600, 1200, 2000];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export default function RootIndex() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth({
+    treatPendingAsSignedOut: false,
+  });
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoaded) return; // wait for Clerk to hydrate — splash screen covers this gap
+    if (!isLoaded) return;
 
-    if (!isSignedIn) {
-      // Signed out — decide between onboarding and sign-in
-      AsyncStorage.getItem("onboarding_done").then((done) => {
+    let cancelled = false;
+
+    async function routeSignedOutUser() {
+      try {
+        const done = await AsyncStorage.getItem("onboarding_done");
+
+        if (cancelled) return;
+
         if (done === "true") {
           router.replace("/(auth)/sign-in");
         } else {
           router.replace("/(onboarding)");
         }
-      });
-      return;
+      } catch {
+        if (!cancelled) {
+          router.replace("/(onboarding)");
+        }
+      }
     }
 
-    // Signed in — resolve DB profile and route by confirmed role
-    (async () => {
+    async function routeSignedInUser() {
       try {
         const token = await getToken();
 
+        if (cancelled) return;
+
         if (!token) {
-          // Session token unavailable — treat as signed out
           router.replace("/(auth)/sign-in");
           return;
         }
 
         const { actor } = await fetchProfileMe(token);
 
+        if (cancelled) return;
+
         switch (actor.role) {
           case "student":
             router.replace("/(student)/home");
-            break;
+            return;
           case "teacher":
-            // Note: teacher approval state check (pending/rejected gate)
-            // belongs to Feature 19 — not implemented here.
-            // For now, all teacher roles go to dashboard unconditionally.
             router.replace("/(teacher)/dashboard");
-            break;
+            return;
           case "admin":
-            // Admin area does not exist in mobile yet.
-            // Redirect to student home as safe fallback until Feature N.
             router.replace("/(student)/home");
-            break;
+            return;
           default:
-            // Profile exists but role is unexpected — safe fallback
-            router.replace("/(auth)/select-role");
+            router.replace("/(student)/home");
+            return;
         }
       } catch (error) {
-        if (error instanceof ApiError && error.status === 404) {
-          // Clerk user exists but no DB profile yet
-          // (e.g., webhook sync delay) — go to select-role
-          router.replace("/(auth)/select-role");
-        } else {
-          // Network error, 401, or other — fall back to sign-in
-          router.replace("/(auth)/sign-in");
-        }
-      }
-    })();
-  }, [isLoaded, isSignedIn]);
+        if (cancelled) return;
 
-  return null; // splash screen covers the blank state
+        if (error instanceof ApiError && error.status === 404) {
+          for (const delay of PROFILE_RETRY_DELAYS_MS) {
+            await sleep(delay);
+
+            if (cancelled) return;
+
+            try {
+              const retryToken = await getToken();
+
+              if (!retryToken) {
+                router.replace("/(auth)/sign-in");
+                return;
+              }
+
+              const { actor } = await fetchProfileMe(retryToken);
+
+              if (cancelled) return;
+
+              switch (actor.role) {
+                case "student":
+                  router.replace("/(student)/home");
+                  return;
+                case "teacher":
+                  router.replace("/(teacher)/dashboard");
+                  return;
+                case "admin":
+                  router.replace("/(student)/home");
+                  return;
+                default:
+                  router.replace("/(student)/home");
+                  return;
+              }
+            } catch (retryError) {
+              if (
+                !(retryError instanceof ApiError && retryError.status === 404)
+              ) {
+                router.replace("/(auth)/sign-in");
+                return;
+              }
+            }
+          }
+
+          router.replace("/(auth)/sign-in");
+          return;
+        }
+
+        router.replace("/(auth)/sign-in");
+      }
+    }
+
+    if (!isSignedIn) {
+      routeSignedOutUser();
+    } else {
+      routeSignedInUser();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, getToken, router]);
+
+  return <LoadingScreen />;
 }

@@ -1,22 +1,20 @@
 # EduStream Mobile — Progress Tracker
 
 
-
 ## Current Status
 Feature 16 is **complete**. The first installable Android APK was built and confirmed working on a real device.
 Feature 15 is **in progress** — UI polish, empty/error/loading states, and design-system-first refinement are ongoing.
-Feature 17 is now **in progress** — Clerk has been installed, the root provider wiring is in place, the Expo-compatible built-in token cache is configured, and the app boots successfully without runtime or TypeScript errors.
-The backend analysis phase (reading web repo + Postman collection) is now **complete** — the backend is ready for mobile consumption and Features 17–24 below represent the approved continuation plan.
-
+Feature 17 is **complete** — Clerk is fully wired, the root provider is in place, the Expo-compatible built-in token cache is configured, and the app boots successfully without runtime or TypeScript errors.
+Feature 18 is now **complete** — real sign-in, sign-up, logout, and role-based route guards are implemented and verified on the emulator across all auth entry points and both protected route groups.
+The backend analysis phase (reading web repo + Postman collection) is complete — the backend is ready for mobile consumption and Features 19–24 below represent the approved continuation plan.
 
 
 ## Next Up
-Feature 15 — Complete UI Polish and Empty/Error States (finish before continuing deeper Feature 17 work)
-
+Feature 19 — Wire Profile Resolution (`GET /api/profile/me`)
+Feature 15 remains in progress in parallel and should be finished opportunistically alongside Feature 19+ work.
 
 
 ## Build Progress
-
 
 
 ### Completed
@@ -35,24 +33,21 @@ Feature 15 — Complete UI Polish and Empty/Error States (finish before continui
 - 13 — Build Profile and Payment Info Screens
 - 14 — Connect Navigation Flows
 - 16 — Prepare First APK Build
-
+- 17 — Install Auth Layer (Clerk + `@clerk/expo`)
+- 18 — Build Real Sign-In / Sign-Up / Logout / Route Guards
 
 
 ### In Progress
 - 15 — Polish UI and Empty/Error States
-- 17 — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
-
 
 
 ### Not Started
-- 18 — Build Real Sign-In / Sign-Up / Role-Selection Screens
 - 19 — Wire Profile Resolution (`GET /api/profile/me`)
 - 20 — Wire Browse + Course Listing to Real API
 - 21 — Wire Course Detail + Lesson List to Real API
 - 22 — Wire Enrollment Status + Payment Request Flow
 - 23 — Wire Lesson Playback Access + Dailymotion Player
 - 24 — Wire Teacher Dashboard to Real API
-
 
 
 ## Backend API Reference (Source of Truth)
@@ -77,7 +72,6 @@ All mobile routes must go through the following confirmed API groups:
 **Video provider:** Dailymotion. Player ID: `x1lwfu`. Profile ID: `x5t43rm`. Playback access resolved server-side via `/api/lessons/:id/playback-access`.
 **Media/thumbnail provider:** Cloudinary. Cloud name: `dawoemact`.
 **Database:** Neon PostgreSQL (Prisma ORM on web side).
-
 
 
 ## Session Notes
@@ -157,12 +151,21 @@ All mobile routes must go through the following confirmed API groups:
 - Browse routes (`/api/browse/years`, `/api/browse/subjects`) require no auth — safe to call at app startup before login.
 - Enrollment status per course lives at `GET /api/courses/:id/enrollment` (auth required) — must be called on course detail open for authenticated users.
 - Teacher routes (`/api/teacher/courses`, `/api/teacher/courses/:id/lessons`) are role-gated — must verify `role === "teacher"` from profile before showing teacher UI.
-- The current `app/index.tsx` always redirects to `/(onboarding)` regardless of `onboarding_done` state — this is a known placeholder and will be fixed in Feature 17 as part of the auth gate setup.
-- The `app/(auth)/sign-in.tsx` and `app/(auth)/sign-up.tsx` screens are currently both plain `<Placeholder>` components — they contain no real implementation yet.
-- The `app/(auth)/select-role.tsx` screen is also a placeholder — role selection after sign-up must be wired to match the web flow (`/select-role` post-signup redirect pattern confirmed in Postman environment).
+- Migrated the Clerk package from `@clerk/clerk-expo` to `@clerk/expo`, aligning with the newer native-component SDK (`AuthView`, `useClerk`, `useAuth`, native token cache from `@clerk/expo/token-cache`).
+- Replaced the placeholder `app/(auth)/sign-in.tsx` and `app/(auth)/sign-up.tsx` screens with Clerk's native `<AuthView mode="signIn" />` and `<AuthView mode="signUp" />` components, which handle email/password and Google OAuth internally.
+- Confirmed backend rule: new users are always created with `role: student` by default via the Clerk webhook; teacher role is assigned by an admin only, never selected by the user on mobile.
+- Based on that backend rule, removed the planned real role-selection screen from the auth flow. `app/(auth)/select-role.tsx` was converted into a simple `<Redirect href="/" />` component instead of a real onboarding step.
+- Updated `app/index.tsx` root routing logic: removed all `select-role` redirect targets; unexpected role and `404` (profile not yet synced by webhook) now retry `fetchProfileMe` with backoff delays before falling back, instead of routing to a role-picker.
+- Discovered that `AuthView` does not navigate on its own after successful sign-in/sign-up/OAuth — it only syncs Clerk's internal auth state (`isSignedIn`). Added `app/(auth)/_layout.tsx` as a reactive layout that watches `isSignedIn` via `useAuth({ treatPendingAsSignedOut: false })` and issues a `<Redirect href="/" />` the moment sign-in completes, which then hands off to `index.tsx`'s existing role-based routing.
+- Confirmed `treatPendingAsSignedOut: false` is required on `useAuth()` in the auth layout to avoid a brief false-negative "signed out" flicker immediately after native auth completes.
+- Added a shared `components/ui/LogoutButton.tsx` using `useClerk().signOut()` with a confirmation `Alert`, followed by `router.replace("/")` so `index.tsx` re-evaluates auth state and routes back to sign-in.
+- Wired `LogoutButton` into both `app/profile/student.tsx` and `app/profile/teacher.tsx`.
+- Added `profile.logout_button`, `profile.logout_confirm_title`, and `profile.logout_confirm_message` to `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
+- Added auth guards to both protected tab-group layouts: `app/(student)/_layout.tsx` and `app/(teacher)/_layout.tsx` now check `isLoaded`/`isSignedIn` via `useAuth()` before rendering their `<Tabs>` tree, redirecting to `/(auth)/sign-in` if the user is signed out. This closes the direct-deep-link gap that existed when route protection only lived in `index.tsx`'s initial boot logic.
+- Confirmed on the Android emulator: Google OAuth sign-in via `AuthView` works end-to-end and lands on the correct role-based home screen; logout via the new `LogoutButton` correctly clears the session and returns to sign-in; navigating to a protected `(student)`/`(teacher)` route while signed out correctly redirects to sign-in via the new layout guards.
+- Hit an unrelated emulator stability issue while iterating on `config.ini` (`hw.lcd.density`, `hw.gpu.mode`) to try to fix blurry WebView/Chrome text during Google sign-in on the emulator: `swiftshader_indirect` GPU mode caused a segmentation fault on this machine's AMD/Intel hybrid GPU setup. Reverted to the previously stable `hw.gpu.mode=host` while keeping the `hw.lcd.density=320` increase. Documented this as a known emulator-only cosmetic issue, not a real-device concern, and deprioritized further GPU-mode tuning in favor of stability.
 - The `CURRENT_TEACHER_ID = "teacher-1"` and `MOCK_TEACHER_ID = "teacher-1"` hardcoded constants in teacher screens and payment screen are the primary identifiers to replace with real Clerk userId lookup in Feature 19.
 - Identified that `getPaymentInfo` and `updatePaymentInfo` in `lib/mock-data/teacher.ts` operate on an in-memory mutable array — this is entirely mock-only and has no persistence; must be replaced by real API calls in Feature 22.
-
 
 
 ## Feature 15 Remaining Work
@@ -176,58 +179,54 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Run `npx tsc --noEmit` and manual RTL QA again after the remaining Feature 15 work is finished.
 
 
-
-## Feature 17 Plan — Install Auth Layer (Clerk + `@clerk/clerk-expo`)
-
-
-**Goal:** Install Clerk into the mobile app, wire the root auth provider correctly for Expo, define the authenticated API foundation, and replace the placeholder app-entry redirect with a real auth-aware boot gate. No real auth form UI yet — that remains Feature 18.
+## Feature 17 — Install Auth Layer (Clerk + `@clerk/expo`) — COMPLETE
 
 
-### Current Status
-- [x] Installed `@clerk/clerk-expo`.
+**Goal:** Install Clerk into the mobile app, wire the root auth provider correctly for Expo, define the authenticated API foundation, and replace the placeholder app-entry redirect with a real auth-aware boot gate.
+
+
+### Final Status
+- [x] Installed `@clerk/expo` (migrated from initial `@clerk/clerk-expo` install).
 - [x] Installed `expo-secure-store`.
 - [x] Added `ClerkProvider` to `app/_layout.tsx` wrapping the root `<Stack>`.
-- [x] Confirmed the correct token cache strategy for the installed Clerk version is the built-in `tokenCache` import from `@clerk/clerk-expo/token-cache`.
-- [x] Removed the temporary custom `lib/tokenCache.ts` file after confirming it was unnecessary and incompatible with the installed package typings.
+- [x] Confirmed the correct token cache strategy is the built-in `tokenCache` import from `@clerk/expo/token-cache`.
 - [x] Confirmed `npx tsc --noEmit` passes clean after Clerk setup.
 - [x] Confirmed the app starts successfully without runtime errors after provider wiring.
+- [x] Replaced the placeholder `app/index.tsx` redirect logic with a real auth-aware boot gate (loading → signed-out → onboarding/sign-in; signed-in → `fetchProfileMe` → role-based redirect with retry/backoff on 404).
+- [x] Registered the `(auth)` route group with its own reactive layout (`app/(auth)/_layout.tsx`) for clean post-auth navigation.
+- [x] Verified signed-out boot behavior on the Android emulator.
+- [x] Verified invalid/missing-token and 404-profile fallback routes cleanly to sign-in after retries.
+
+### Deferred to later features
+- [ ] Add `.env.example` documenting required mobile env vars (not blocking, low priority).
+- [ ] Extend `lib/types.ts` with full real auth/profile types for the backend `Profile` shape — deferred to Feature 19 alongside `ProfileContext`.
+- [ ] Create `lib/api/client.ts` base `apiFetch()` helper — deferred to Feature 19/20 when real data wiring begins.
 
 
-### Remaining Steps
-- [ ] Add `.env` with `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`.
-- [ ] Add `.env.example` documenting required mobile env vars.
-- [ ] Add `EXPO_PUBLIC_API_BASE_URL` to the mobile env setup.
-- [ ] Extend `lib/types.ts` with real auth/profile types for the backend `Profile` shape and `/api/profile/me` response.
-- [ ] Create `lib/api/client.ts` — a base `apiFetch()` helper for authenticated and unauthenticated backend calls.
-- [ ] Optionally add a typed `fetchProfileMe()` helper under `lib/api/`.
-- [ ] Replace the current `app/index.tsx` placeholder redirect logic with a real auth-aware boot gate:
-  - if Clerk is still loading, hold boot;
-  - if signed out, route to onboarding or sign-in;
-  - if signed in, call `GET /api/profile/me`;
-  - redirect by confirmed backend role.
-- [ ] Register the `(auth)` route group explicitly in `app/_layout.tsx` if needed for clean auth navigation.
-- [ ] Verify signed-out boot behavior on Android.
-- [ ] Verify Arabic RTL layout still behaves correctly after the auth gate changes.
-- [ ] Verify invalid or missing token fallback routes cleanly to sign-in.
+## Feature 18 — Build Real Sign-In / Sign-Up / Logout / Route Guards — COMPLETE
 
 
-
-## Feature 18 Plan — Build Real Sign-In / Sign-Up / Role-Selection Screens
-
-
-**Goal:** Replace placeholder auth screens with real Clerk-powered forms, following the same role-selection flow the web app uses after sign-up.
+**Goal:** Replace placeholder auth screens with real Clerk-powered forms and enforce route protection across signed-in-only areas. Role-selection UI was removed from scope after confirming the backend always assigns `role: student` by default and teacher role is admin-managed only.
 
 
-### Steps
-- [ ] Build `app/(auth)/sign-in.tsx` using `useSignIn()` from `@clerk/clerk-expo` — email/password form, Arabic-first labels, RTL-safe layout.
-- [ ] Build `app/(auth)/sign-up.tsx` using `useSignUp()` — same form pattern, Arabic-first.
-- [ ] Build `app/(auth)/select-role.tsx` — two options: Student / Teacher. On selection, POST role choice to backend (or set Clerk metadata) then redirect to appropriate home screen. Must match web post-signup flow (`/select-role` path confirmed in Postman environment).
-- [ ] Add all new visible strings to `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
-- [ ] Handle error states inline (wrong password, network failure, email already taken).
-- [ ] Remove the `__DEV__`-gated teacher-area button from student home once real role-based routing works.
-- [ ] Verify `npx tsc --noEmit` passes clean.
-- [ ] Verify Arabic RTL layout on both sign-in and sign-up screens on a real device.
+### Steps Completed
+- [x] Replaced `app/(auth)/sign-in.tsx` with Clerk's native `<AuthView mode="signIn" isDismissible={false} />` (handles email/password + Google OAuth).
+- [x] Replaced `app/(auth)/sign-up.tsx` with Clerk's native `<AuthView mode="signUp" isDismissible={false} />`.
+- [x] Converted `app/(auth)/select-role.tsx` into a `<Redirect href="/" />` — no real role-selection UI, since role is server-assigned.
+- [x] Updated `app/index.tsx` to remove all `select-role` navigation targets; added retry/backoff logic (`PROFILE_RETRY_DELAYS_MS`) for the 404 "profile not yet synced by webhook" case.
+- [x] Added `app/(auth)/_layout.tsx` — reactive layout using `useAuth({ treatPendingAsSignedOut: false })` that redirects to `/` the moment `isSignedIn` becomes true, since `AuthView` does not navigate on its own.
+- [x] Built `components/ui/LogoutButton.tsx` using `useClerk().signOut()` with a confirmation `Alert`, followed by `router.replace("/")`.
+- [x] Wired `LogoutButton` into `app/profile/student.tsx` and `app/profile/teacher.tsx`.
+- [x] Added auth guards to `app/(student)/_layout.tsx` and `app/(teacher)/_layout.tsx` — both now check `isLoaded`/`isSignedIn` before rendering their `<Tabs>` tree and redirect to `/(auth)/sign-in` otherwise, closing the deep-link protection gap.
+- [x] Added `profile.logout_button`, `profile.logout_confirm_title`, and `profile.logout_confirm_message` to `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
+- [x] Verified `npx tsc --noEmit` passes clean.
+- [x] Verified on Android emulator: Google OAuth sign-in end-to-end, logout end-to-end, and both `(student)`/`(teacher)` layout guards correctly block direct navigation while signed out.
 
+### Not yet explicitly re-verified (low risk, revisit opportunistically)
+- [ ] Email/password sign-up path (new account → verification → landing on `/(student)/home`) — Google OAuth and logout were explicitly confirmed; sign-up specifically has not been walked through step-by-step since the layout guards were added.
+- [ ] Teacher role routing — requires manually setting a test profile's `role` to `teacher` in the database (e.g. via Prisma Studio) to confirm `/(teacher)/dashboard` redirect and the teacher `_layout.tsx` guard both behave correctly.
+- [ ] Swap `app/index.tsx`'s loading branch from `return null` to the shared `<LoadingScreen />` component for a smoother boot instead of a blank flash.
+- [ ] Remove the `__DEV__`-gated teacher-area button from student home now that real auth exists (originally scheduled for this feature, still present).
 
 
 ## Feature 19 Plan — Wire Profile Resolution (`GET /api/profile/me`)
@@ -238,15 +237,17 @@ All mobile routes must go through the following confirmed API groups:
 
 ### Steps
 - [ ] Create `lib/api/profile.ts` with `fetchMyProfile()` calling `GET /api/profile/me` using `apiFetch()`.
+- [ ] Create `lib/api/client.ts` with a base `apiFetch()` helper (deferred from Feature 17).
 - [ ] Create `lib/context/ProfileContext.tsx` — a React context that stores `{ profile, role, loading, error }` and exposes a `refreshProfile()` method.
 - [ ] Wrap the root layout in `<ProfileProvider>` after `<ClerkProvider>`.
 - [ ] Replace all `MOCK_TEACHER_ID = "teacher-1"` and `CURRENT_TEACHER_ID = "teacher-1"` hardcoded constants with real `profile.id` / `profile.userId` from context.
 - [ ] Add a role guard hook `useRequireRole(role)` that redirects to sign-in if the user is not authenticated or not the required role.
 - [ ] Apply `useRequireRole("teacher")` to all `(teacher)` screens.
 - [ ] Handle `profile.approvalState !== "approved"` for teacher accounts — show a pending-approval screen instead of the teacher dashboard if the teacher is not yet approved.
+- [ ] Remove the `__DEV__`-gated teacher-area button from student home now that real role-based routing and guards exist.
 - [ ] Verify `npx tsc --noEmit` passes clean.
 - [ ] Verify profile loads correctly after sign-in on a real device.
-
+- [ ] While here, verify the deferred Feature 18 items: email/password sign-up end-to-end, and teacher-role routing via a manually flipped test profile.
 
 
 ## Feature 20 Plan — Wire Browse + Course Listing to Real API
@@ -276,7 +277,6 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify Arabic RTL layout on browse screens on a real device.
 
 
-
 ## Feature 21 Plan — Wire Course Detail + Lesson List to Real API
 
 
@@ -300,7 +300,6 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Add all new visible strings to `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
 - [ ] Verify `npx tsc --noEmit` passes clean.
 - [ ] Verify RTL + Arabic layout on course detail and lesson list on a real device.
-
 
 
 ## Feature 22 Plan — Wire Enrollment Status + Payment Request Flow
@@ -329,7 +328,6 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Add all new visible strings to `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
 - [ ] Verify `npx tsc --noEmit` passes clean.
 - [ ] Verify RTL + Arabic layout on the enrollment/payment screen on a real device.
-
 
 
 ## Feature 23 Plan — Wire Lesson Playback Access + Dailymotion Player
@@ -362,7 +360,6 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify playback on a real Android device — test preview lesson (no auth), locked lesson (no auth), and enrolled lesson (with auth).
 
 
-
 ## Feature 24 Plan — Wire Teacher Dashboard to Real API
 
 
@@ -388,16 +385,20 @@ All mobile routes must go through the following confirmed API groups:
 - [ ] Verify Arabic RTL layout on teacher screens on a real device.
 
 
-
 ## Architecture Notes
 
 
-### Auth Flow (after Features 17–19)
-- Clerk is the auth provider; mobile uses `@clerk/clerk-expo` with the Expo built-in token cache (backed by `expo-secure-store`).
-- After any successful sign-in, the mobile app must call `GET /api/profile/me` (server-side profile resolution) to obtain canonical `role` and `teacherApprovalStatus`.
+### Auth Flow (after Features 17–18)
+- Clerk is the auth provider; mobile uses `@clerk/expo` with the native `AuthView`/`UserButton`-style component SDK and the built-in token cache (backed by `expo-secure-store`).
+- Sign-in and sign-up UI is handled entirely by Clerk's native `<AuthView />` component (email/password + Google OAuth) — no custom form fields were built.
+- `AuthView` does not perform navigation itself; a reactive `app/(auth)/_layout.tsx` watches `isSignedIn` and redirects to `/` on completion, handing off to `index.tsx`'s role-based routing.
+- Role is always server-assigned: new users default to `role: student` via the Clerk webhook; teacher role is admin-managed only. There is no client-side role-selection step — `select-role.tsx` is a dead-end redirect, not a real screen.
+- After any successful sign-in, the mobile app calls `GET /api/profile/me` (server-side profile resolution) to obtain canonical `role` and `teacherApprovalStatus`, with retry/backoff for the 404 "not yet synced" case.
 - All protected backend routes must receive `Authorization: Bearer <clerkToken>` header carrying Clerk session tokens obtained via `getToken()` from `useAuth()` (or via a small helper).
 - Role-guarded UI (teacher area) must check the server-resolved profile role (not Clerk metadata) before rendering sensitive screens.
-- Teacher approval-state gating is enforced server-side; the mobile app must reflect the server's `teacherApprovalStatus` in the UI.
+- Teacher approval-state gating is enforced server-side; the mobile app must reflect the server's `teacherApprovalStatus` in the UI (Feature 19).
+- Route protection is layered: `index.tsx` handles initial boot routing, while `app/(auth)/_layout.tsx`, `app/(student)/_layout.tsx`, and `app/(teacher)/_layout.tsx` each independently guard their own route groups against direct/deep-link navigation while signed out.
+- Logout is handled via a shared `components/ui/LogoutButton.tsx` using `useClerk().signOut()`, present on both student and teacher profile screens.
 
 
 ### Env variables (mobile)
@@ -407,9 +408,12 @@ All mobile routes must go through the following confirmed API groups:
 - Do NOT add server-side secrets from web `.env.local` (such as `CLERK_SECRET_KEY` or webhook secrets) to the mobile `.env`.
 
 
-### Quick verification checklist after Feature 17
+### Quick verification checklist after Feature 18
 - `npx tsc --noEmit` passes.
 - `npx expo start --clear` boots without runtime errors.
 - App boots signed-out to onboarding or sign-in as expected.
 - `ClerkProvider` is present and `tokenCache` is passed in `app/_layout.tsx`.
+- Sign-in via `AuthView` (Google OAuth) works and redirects to the correct role-based home screen.
+- Logout via `LogoutButton` correctly clears the session and returns to sign-in.
+- Navigating directly to a `(student)` or `(teacher)` route while signed out redirects to sign-in via the layout guards.
 - Arabic RTL layout unchanged and verified in main screens.

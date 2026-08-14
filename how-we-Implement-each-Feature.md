@@ -11263,3 +11263,507 @@ installing Clerk at the root is only the foundation. The app should not be consi
 - `/api/profile/me` resolution
 - role-aware mobile flow
 - removal of mock identity assumptions
+
+
+
+---
+
+# Feature 18 — Build Real Sign-In, Sign-Up, and Role-Selection Screens with Clerk Hooks
+
+## What this feature does
+
+Feature 17 installed the Clerk runtime foundation but deliberately stopped before touching the actual auth screens. Feature 18 finishes that half of the job by replacing the three placeholder screens with real, working Clerk-powered UI:
+
+- `app/(auth)/sign-up.tsx` — email + password sign-up with email verification code
+- `app/(auth)/sign-in.tsx` — email + password sign-in
+- `app/(auth)/select-role.tsx` — a temporary post-signup role choice screen
+
+This feature still does **not** build:
+- backend profile creation or `/api/profile/me` resolution
+- role persistence in a real database
+- protected-route guards based on role
+- social/OAuth sign-in
+- full boot-time signed-in vs signed-out redirect logic
+
+The final success condition for this feature is:
+- a new user can sign up with email and password
+- the user receives and enters an email verification code
+- on successful verification, a real Clerk session is created and activated
+- an existing user can sign in with email and password
+- after auth, the user is routed to the temporary role-selection screen
+- all visible text uses translation keys (Arabic-first, English secondary)
+- the screens are RTL-safe
+- TypeScript passes cleanly
+- the app still starts and runs after the changes
+
+---
+
+## Why this feature matters
+
+Feature 17 made Clerk part of the app runtime, but a `ClerkProvider` with no real forms is not usable by anyone. This feature is the point where authentication becomes something a real user can actually do, not just something the app is technically wired for.
+
+For a React / Next.js engineer, this is the mobile equivalent of building the actual `/sign-up` and `/sign-in` pages after already installing an auth SDK at the root of a Next.js app. The important difference is that Clerk's Expo SDK does not give you a finished web-style hosted auth page by default in this flow — you build the form yourself using Clerk's React hooks, and Clerk only handles the underlying account and verification lifecycle.[web:42][web:43]
+
+This feature also matters because it is the first place the project has to handle an asynchronous, multi-step user flow (create sign-up attempt → send code → verify code → activate session) instead of a single request/response action. That step sequencing is a core Clerk concept, and getting it right here sets the pattern for all future auth-aware screens.[web:47][web:383]
+
+---
+
+## Original implementation plan
+
+The implementation plan for Feature 18 became:
+
+1. Re-read the current mobile repo documents and the Feature 17 notes before writing any screen code.
+2. Confirm the current Clerk Expo API shape (`useSignUp`, `useSignIn`) rather than assume an older API from memory.
+3. Add translation keys for all new visible auth strings in `lib/i18n/ar.ts` and `lib/i18n/en.ts`.
+4. Build the sign-up screen with a two-step UI: credentials step, then verification-code step.
+5. Build the sign-in screen with a single credentials step.
+6. Build a minimal role-selection screen as a temporary post-auth landing point.
+7. Wire navigation between sign-up, sign-in, and select-role using Expo Router.
+8. Keep the screens using the shared UI primitives from Feature 06 instead of new one-off styling.
+9. Run TypeScript verification and a runtime check.
+
+Constraints carried over from earlier features remained active:
+- Arabic-first, all visible strings via `t()`
+- RTL-safe layout (no hardcoded left/right spacing)
+- no backend profile/role persistence yet
+- do not expand scope into protected routing or `/api/profile/me`
+
+---
+
+## Step 1 — Re-read the repo documents and Feature 17 notes before writing screen code
+
+### What we did
+
+Before touching any screen file, we re-read the current mobile architecture, code standards, UI context, and the Feature 17 entry in this file.
+
+### Why we did it
+
+Feature 17 explicitly warned against scope creep: it installed the provider but intentionally left sign-in, sign-up, and role selection unfinished so that a later feature could implement them cleanly. Re-reading that boundary first prevented Feature 18 from accidentally also trying to build backend profile resolution or role-based route guards, which are separate, later features.
+
+### Why this matters
+
+Auth is one of the easiest places for feature boundaries to blur. Confirming the boundary first meant Feature 18 could stay focused: real forms, real Clerk session creation, and a temporary role landing screen — nothing more.
+
+---
+
+## Step 2 — Confirm the current Clerk Expo hook API before writing forms
+
+### What we did
+
+We checked the current Clerk documentation for the Expo SDK rather than relying on older tutorial patterns, and confirmed the two hooks needed for this feature:
+
+- `useSignUp()` — returns the `signUp` object, `setActive`, and `isLoaded`, and is used to create a sign-up attempt, trigger email verification, and complete the sign-up flow.[web:383][web:43]
+- `useSignIn()` — returns the `signIn` object, `setActive`, and `isLoaded`, and is used to create a sign-in attempt with an identifier and password.[web:42][web:43]
+
+### Why we did it
+
+Clerk's SDK has gone through API changes across versions (for example, a newer "Core 3" pattern that uses methods like `signUp.password()` and `signUp.finalize()` alongside the older `signUp.create()` / `attemptEmailAddressVerification()` pattern still documented for the Expo SDK's legacy hooks).[web:47][web:61] Because Feature 17 installed the package fresh, we verified which pattern matched the installed package's actual typings instead of assuming either pattern from memory.
+
+### Why this matters
+
+This is the same lesson Feature 17 already taught with the token cache: **check the installed SDK's real supported path before writing integration code**, rather than trusting the first example found online. Auth code that "looks right" but targets a different SDK version can fail silently or produce confusing type errors.
+
+### React vs React Native note
+
+A Next.js engineer used to server-side auth callbacks or a hosted `/sign-up` page from an auth provider may find it unusual that Clerk's Expo integration expects you to author the actual form UI yourself using hooks. The hooks return live objects (`signUp`, `signIn`) whose methods drive a multi-step state machine — you are building a controlled flow, not redirecting to a hosted page.[web:42][web:47]
+
+---
+
+## Step 3 — Add translation keys for all new auth screens
+
+### What we did
+
+We added new keys to `lib/i18n/ar.ts` and `lib/i18n/en.ts` covering:
+- sign-up title, email label, password label, continue button
+- verification step title, code label, verify button, resend hint
+- sign-in title, email label, password label, continue button
+- "already have an account" / "don't have an account" link text
+- select-role title, student option, teacher option, confirm button
+- generic auth error message
+
+### Why we did it
+
+Feature 04 established that no screen may introduce raw visible strings, and Feature 05 reinforced that this rule applies to every new screen from day one, not just the ones built before localization existed. Auth screens are no exception, even though they are backend-adjacent infrastructure.
+
+### Why this matters
+
+Auth forms are one of the most-seen screens in any app. If they had been built with hardcoded English first "to move fast," the localization debt would have been immediate and visible to every single user on first launch, which is worse than the debt in earlier screens that were already migrated.
+
+---
+
+## Step 4 — Build the sign-up screen with a two-step flow
+
+### What we did
+
+We replaced the placeholder in `app/(auth)/sign-up.tsx` with a real screen built around `useSignUp()`. The screen manages two local UI states:
+
+- **credentials step**: email + password inputs, a "Continue" button
+- **verification step**: a code input, a "Verify" button
+
+The credentials step calls `signUp.create({ emailAddress, password })` and then `signUp.prepareEmailAddressVerification({ strategy: "email_code" })`, then flips a `pendingVerification` flag to show the code step.[web:43][web:383]
+
+The verification step calls `signUp.attemptEmailAddressVerification({ code })`, and if the result status is `"complete"`, calls `setActive({ session: signUpAttempt.createdSessionId })` and then navigates to the role-selection screen.[web:43][web:383]
+
+The shape of the implementation is conceptually:
+
+```tsx
+import { useState } from "react";
+import { View, TextInput, Alert } from "react-native";
+import { useSignUp } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
+import { t } from "../../lib/i18n";
+import {
+  ScreenContainer,
+  AppText,
+  PrimaryButton,
+} from "../../components/ui";
+
+export default function SignUpScreen() {
+  const { isLoaded, signUp, setActive } = useSignUp();
+  const router = useRouter();
+
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [pendingVerification, setPendingVerification] = useState(false);
+
+  const onSignUpPress = async () => {
+    if (!isLoaded) return;
+    try {
+      await signUp.create({ emailAddress, password });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setPendingVerification(true);
+    } catch (err) {
+      Alert.alert(t("auth.error_title"), t("auth.generic_error"));
+    }
+  };
+
+  const onVerifyPress = async () => {
+    if (!isLoaded) return;
+    try {
+      const attempt = await signUp.attemptEmailAddressVerification({ code });
+      if (attempt.status === "complete") {
+        await setActive({ session: attempt.createdSessionId });
+        router.replace("/(auth)/select-role");
+      } else {
+        Alert.alert(t("auth.error_title"), t("auth.generic_error"));
+      }
+    } catch (err) {
+      Alert.alert(t("auth.error_title"), t("auth.generic_error"));
+    }
+  };
+
+  return (
+    <ScreenContainer>
+      {!pendingVerification ? (
+        <View>
+          <AppText variant="title">{t("auth.sign_up_title")}</AppText>
+          <TextInput
+            autoCapitalize="none"
+            value={emailAddress}
+            placeholder={t("auth.email_label")}
+            onChangeText={setEmailAddress}
+          />
+          <TextInput
+            secureTextEntry
+            value={password}
+            placeholder={t("auth.password_label")}
+            onChangeText={setPassword}
+          />
+          <PrimaryButton label={t("auth.continue_button")} onPress={onSignUpPress} />
+        </View>
+      ) : (
+        <View>
+          <AppText variant="title">{t("auth.verify_title")}</AppText>
+          <TextInput
+            value={code}
+            placeholder={t("auth.code_label")}
+            onChangeText={setCode}
+          />
+          <PrimaryButton label={t("auth.verify_button")} onPress={onVerifyPress} />
+        </View>
+      )}
+    </ScreenContainer>
+  );
+}
+```
+
+### Why we did it
+
+Email/password sign-up with email code verification is the exact flow Clerk's own Expo examples demonstrate: create the sign-up attempt, prepare email verification with the `"email_code"` strategy, then attempt verification with the code the user received by email.[web:43][web:47][web:383] We followed that documented sequence rather than inventing a custom verification mechanism.
+
+### Why this matters
+
+This is the first screen in the project where a single user action (tapping "Continue") does not immediately resolve. It kicks off a real asynchronous, stateful process involving Clerk's servers sending an email. That is fundamentally different from every mock-data screen built in earlier features, where "loading" was simulated and always eventually succeeded.
+
+### React vs React Native note
+
+In a Next.js app, this two-step credential-then-verification pattern is often split across two routes or handled with server actions and redirects. Here, both steps live in one native screen using local component state (`pendingVerification`), because a full route change for a two-second UI state flip would be an unnecessary native navigation event. This is a case where keeping state local to the screen is the more idiomatic mobile choice, not a shortcut.
+
+---
+
+## Step 5 — Build the sign-in screen
+
+### What we did
+
+We replaced the placeholder in `app/(auth)/sign-in.tsx` with a screen built around `useSignIn()`. It collects an email and password, calls `signIn.create({ identifier: emailAddress, password })`, and if the resulting status is `"complete"`, calls `setActive({ session: signInAttempt.createdSessionId })` and navigates onward.[web:42][web:43]
+
+```tsx
+const onSignInPress = async () => {
+  if (!isLoaded) return;
+  try {
+    const attempt = await signIn.create({ identifier: emailAddress, password });
+    if (attempt.status === "complete") {
+      await setActive({ session: attempt.createdSessionId });
+      router.replace("/(auth)/select-role");
+    } else {
+      Alert.alert(t("auth.error_title"), t("auth.generic_error"));
+    }
+  } catch (err) {
+    Alert.alert(t("auth.error_title"), t("auth.generic_error"));
+  }
+};
+```
+
+### Why we did it
+
+Sign-in is a single-step flow compared to sign-up's two steps, because an existing account has already completed verification once. Clerk's `signIn.create()` call with an `identifier` (email) and `password` is the documented pattern for this exact case.[web:42][web:43]
+
+### Why this matters
+
+Keeping sign-in intentionally simpler than sign-up avoids over-engineering a screen that does not need a multi-step state machine. Not every auth screen needs the same shape, and forcing symmetry between sign-up and sign-in would have added unnecessary complexity.
+
+### Important note on status handling
+
+Clerk's sign-in flow can also return statuses like `"needs_second_factor"` when multi-factor authentication is enabled on an account.[web:362] This feature does not implement MFA handling, so any non-`"complete"` status is currently treated as a generic error. That is an intentional, documented limitation, not an oversight — MFA is out of scope for this feature.
+
+---
+
+## Step 6 — Build the temporary role-selection screen
+
+### What we did
+
+We replaced the placeholder in `app/(auth)/select-role.tsx` with a minimal screen offering two options — student and teacher — using the shared `PrimaryButton` and `SecondaryButton` components from Feature 06. Selecting a role currently only stores the choice in local state and navigates into the corresponding mock-data-driven flow; it does not yet persist the role anywhere real.
+
+### Why we did it
+
+The project architecture requires role-aware routing eventually, but real role persistence depends on backend profile resolution, which is explicitly out of scope for this feature. A temporary local selection screen lets the auth flow feel complete end-to-end (sign up or sign in → choose a role → land in the app) without pretending the backend piece already exists.
+
+### Why this matters
+
+This mirrors the same incremental-delivery pattern used for the Watch screen placeholder in Feature 05: build a real, working screen at the current boundary of what's implemented, and be explicit about what is intentionally still temporary. That honesty in the code (and in this document) prevents future confusion about whether role selection is "done."
+
+---
+
+## Step 7 — Keep auth screens on the shared UI foundation
+
+### What we did
+
+Instead of writing new one-off styling for these three screens, we reused `ScreenContainer`, `AppText`, `PrimaryButton`, and `SecondaryButton` from the Feature 06 shared UI layer, and kept spacing choices RTL-safe (no hardcoded `marginLeft`/`marginRight`).
+
+### Why we did it
+
+Feature 06 built exactly this kind of foundation so that new screens would not need to reinvent styling. Auth screens are a strong test of that foundation because they are form-heavy and text-input-heavy, which the earlier screens were not.
+
+### Why this matters
+
+This also proved the shared UI layer generalizes beyond browse/detail screens into form-based screens, which is a meaningfully different UI shape.
+
+---
+
+## Step 8 — Wire navigation between the three auth screens
+
+### What we did
+
+We connected:
+- a "sign in" link from the sign-up screen
+- a "sign up" link from the sign-in screen
+- a `router.replace()` call from both successful auth flows into `select-role`
+
+using Expo Router's `Link` and `useRouter()`.
+
+### Why we did it
+
+An auth flow is only usable if a user can move between sign-up and sign-in without restarting the app, and if a successful auth event actually lands somewhere meaningful.
+
+### Why this matters
+
+We used `router.replace()` rather than `router.push()` for the post-auth transition specifically so the auth screen is removed from the native navigation stack — a signed-in user should not be able to press the hardware/gesture back button and land back on the sign-in form.
+
+---
+
+## Step 9 — Run TypeScript verification
+
+### What we did
+
+```bash
+npx tsc --noEmit
+```
+
+### Why we did it
+
+Because these screens are the first real consumers of the Clerk hooks installed in Feature 17, TypeScript verification confirms that the hook return shapes, status string comparisons, and navigation calls all type-check correctly against the installed SDK version.
+
+### Result
+
+TypeScript passed cleanly after the new screens were added.
+
+---
+
+## Step 10 — Verify the flow at runtime
+
+### What we did
+
+```bash
+npx expo start --clear
+```
+
+We then manually walked through:
+- sign-up with a new email → received code → verified → landed on select-role
+- sign-in with an existing verified account → landed on select-role
+- navigation links between sign-up and sign-in
+
+in both Arabic (default) and English.
+
+### Why we did it
+
+A working `tsc` pass does not guarantee the multi-step Clerk state machine actually behaves correctly on device — email delivery, code entry, and session activation are all runtime concerns that static checking cannot verify.
+
+### Result
+
+The full sign-up → verify → session-active → select-role path worked on device, as did sign-in. Arabic rendered first by default, and switching to English kept the flow working with no layout breakage.
+
+---
+
+## Problems encountered
+
+### Problem 1 — Risk of mixing an older Clerk API pattern with the installed version
+
+Because Clerk's SDK has both a documented legacy hook pattern (`signUp.create()`, `attemptEmailAddressVerification()`) and a newer method pattern (`signUp.password()`, `signUp.finalize()`) across versions, there was a real risk of writing code against the wrong pattern.[web:47][web:61][web:383]
+
+### Problem 2 — Two-step sign-up state easily becomes messy
+
+Managing "credentials step" vs "verification step" inside one screen component risked turning into a tangle of conditionals if not planned carefully.
+
+### Problem 3 — Temptation to persist the selected role immediately
+
+Once the role-selection screen existed, it was tempting to also wire it directly into a fake "save role" mock call, which would have quietly expanded this feature into backend-profile territory.
+
+---
+
+## How those problems were solved
+
+### Solution 1 — Verify hook behavior against the installed package before writing final code
+
+We treated the installed `@clerk/clerk-expo` version's actual typings and Clerk's Expo-specific documentation as the source of truth over generic Clerk web documentation or older blog examples.[web:383][web:42]
+
+### Solution 2 — Use one clear boolean flag to separate the two sign-up steps
+
+A single `pendingVerification` boolean cleanly switches the rendered form section, keeping the component readable without introducing a separate state machine library for a two-state flow.
+
+### Solution 3 — Keep role selection local-only and explicitly say so
+
+We stored the selected role only in local component state/navigation for now, and documented clearly (here and in code comments) that backend persistence is a separate future feature.
+
+---
+
+## React vs React Native lessons from this feature
+
+## Lesson 1 — Auth UI on mobile is a state machine you build, not a page you redirect to
+
+A Next.js engineer accustomed to hosted auth pages or server-driven redirects will notice that Clerk's Expo hooks hand you raw lifecycle objects (`signUp`, `signIn`) and expect the screen to drive the state transitions itself.[web:42][web:47]
+
+## Lesson 2 — Multi-step verification flows benefit from staying in one screen on mobile
+
+Splitting sign-up credentials and email verification into two separate native routes would add an unnecessary navigation transition for what is really one continuous user action. Local component state is often the better mobile choice for short-lived multi-step flows.
+
+## Lesson 3 — "Complete" auth still needs an explicit `setActive` call
+
+Unlike some web auth setups where a session cookie is set automatically, Clerk's Expo flow requires explicitly calling `setActive({ session })` once a sign-up or sign-in attempt reaches `"complete"` status.[web:42][web:43] Forgetting this step results in a created account or verified credentials with no actual active session — a subtle bug that only shows up when you try to access session-dependent data afterward.
+
+## Lesson 4 — Installing a package and using its intended API correctly are two different skills
+
+Feature 17 proved the value of using the SDK's supported path over custom abstraction. Feature 18 proved the same lesson applies to actually calling the hooks correctly, not just importing them.
+
+---
+
+## Discussion notes
+
+### Why did this feature not also build role persistence?
+
+Because role persistence depends on backend profile resolution, which has its own architecture and is explicitly deferred. Bundling it into this feature would have repeated the exact scope-creep risk Feature 17 called out and successfully avoided.
+
+### Why build a custom form instead of a Clerk prebuilt component?
+
+Clerk does offer prebuilt `<SignUp />` / `<SignIn />` style components in some SDK contexts, but building the form manually with hooks gives full control over layout, translation keys, and RTL-safe styling — all of which are hard requirements in this Arabic-first project that a generic prebuilt component would not automatically satisfy.[web:381][web:42]
+
+### What is the most important thing to remember from Feature 18?
+
+**A user can now actually create an account, verify it, sign in, and reach a role-selection point — but the app still does not know or persist that role anywhere real.** Future features must build the backend profile resolution and role-aware routing on top of this working auth foundation, not around it.
+
+---
+
+## Final output of Feature 18
+
+At the end of this feature, the project has:
+- a working sign-up screen using `useSignUp()` with email/password and email-code verification[web:43][web:383]
+- a working sign-in screen using `useSignIn()` with email/password[web:42][web:43]
+- a temporary role-selection screen reached after successful auth
+- navigation links connecting sign-up and sign-in
+- `router.replace()` used to remove auth screens from the stack after success
+- new translation keys for all auth-related visible text in Arabic and English
+- auth screens built on the Feature 06 shared UI foundation
+- RTL-safe layout preserved
+- clean TypeScript verification
+- confirmed runtime behavior for both sign-up and sign-in paths
+
+---
+
+## Completion checklist for Feature 18
+
+Feature 18 is complete when all of these are true:
+
+- `app/(auth)/sign-up.tsx` uses `useSignUp()` and completes the create → verify → activate session flow[web:43][web:383]
+- `app/(auth)/sign-in.tsx` uses `useSignIn()` and completes the create → activate session flow[web:42][web:43]
+- `app/(auth)/select-role.tsx` offers a student/teacher choice and navigates onward
+- successful auth calls `setActive({ session })` before navigating[web:42][web:43]
+- navigation uses `router.replace()` after successful auth, not `router.push()`
+- all visible auth text comes from translation keys in `lib/i18n/ar.ts` and `lib/i18n/en.ts`
+- Arabic renders first by default on all three screens
+- English still works after switching
+- the screens use the shared `components/ui` primitives from Feature 06
+- no hardcoded left/right spacing was introduced
+- `npx tsc --noEmit` passes cleanly
+- `npx expo start --clear` starts successfully and the full sign-up and sign-in flows work on device
+- no role-persistence or backend profile calls were added, by design
+
+---
+
+## Exact commands used
+
+```bash
+npx tsc --noEmit
+npx expo start --clear
+```
+
+Files touched during this feature:
+
+```bash
+code app/(auth)/sign-up.tsx
+code app/(auth)/sign-in.tsx
+code app/(auth)/select-role.tsx
+code lib/i18n/ar.ts
+code lib/i18n/en.ts
+```
+
+---
+
+## Official references
+
+- Clerk Expo Quickstart: [https://clerk.com/docs/expo/getting-started/quickstart](https://clerk.com/docs/expo/getting-started/quickstart) [web:49]
+- `useSignUp()` hook reference (Expo): [https://clerk.com/docs/expo/reference/hooks/legacy/use-sign-up](https://clerk.com/docs/expo/reference/hooks/legacy/use-sign-up) [web:383]
+- Expo guide: Using Clerk: [https://docs.expo.dev/guides/using-clerk/](https://docs.expo.dev/guides/using-clerk/) [web:42]
+- Custom email/password authentication flow: [https://clerk.com/docs/guides/development/custom-flows/authentication/email-password](https://clerk.com/docs/guides/development/custom-flows/authentication/email-password) [web:47]
+- Sign-up and sign-in strategy options: [https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options](https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options) [web:382]
+
+One important caution to remember for later features: this feature makes real accounts and real sessions possible, but role selection is still local-only. The app should not be treated as fully role-aware until a later feature adds backend profile persistence and protected-route role guards.

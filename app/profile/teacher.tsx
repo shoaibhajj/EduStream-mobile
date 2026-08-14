@@ -25,6 +25,7 @@ import {
   Card,
 } from "../../components/ui";
 import {Colors} from "../../constants/colors";
+import { LogoutButton } from "../../components/ui/LogoutButton";
 
 export default function TeacherProfileScreen() {
   const [profile, setProfile] = useState<Teacher | null>(null);
@@ -151,6 +152,10 @@ export default function TeacherProfileScreen() {
               label={t("profile.payment_title")}
               onPress={() => router.push("/profile/payment")}
             />
+          </View>
+
+          <View style={{ marginTop: 12 }}>
+            <LogoutButton />
           </View>
 
           <View style={styles.actions}>

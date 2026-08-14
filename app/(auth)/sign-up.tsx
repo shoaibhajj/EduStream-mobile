@@ -1,11 +1,10 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import { AuthView } from "@clerk/expo/native";
 
-export default function PlaceholderScreen() {
+export default function SignUpScreen() {
   return (
-    <View className="flex-1 bg-background items-center justify-center">
-      <Text className="text-text-primary text-base font-semibold">
-        Placeholder
-      </Text>
+    <View className="flex-1 bg-background">
+      <AuthView mode="signUp" isDismissible={false} />
     </View>
   );
 }
